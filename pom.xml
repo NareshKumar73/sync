@@ -13,7 +13,7 @@
 	<artifactId>Sync</artifactId>
 	<version>0.0.1</version>
 	<name>Sync</name>
-	<description>Local File Share App</description>
+	<description>LAN File Share App</description>
 	<properties>
 		<java.version>17</java.version>
 	</properties>
@@ -23,9 +23,8 @@
 			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
-			<version>2.2.0</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>

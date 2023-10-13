@@ -13,7 +13,8 @@ import lombok.NoArgsConstructor;
 @Data
 public class FileMeta {
 	
-	private String filecode;
+	private String url;
+	private String code;
 	private String name;
 	private String size;
 	private String LastModified;	

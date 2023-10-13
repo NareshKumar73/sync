@@ -14,6 +14,7 @@ import org.springframework.http.ZeroCopyHttpOutputMessage;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@CrossOrigin("*")
 @RequiredArgsConstructor
 @RestController
 public class FileController {
@@ -42,9 +44,9 @@ public class FileController {
 	@GetMapping("/files")
 	public Mono<FileListJson> fileList() { 	
 		
-		List<FileMeta> list = fs.getLocalFilesList();
-		
-		return Mono.just(new FileListJson(list, list.size()));
+		List<FileMeta> metaList = fs.getLocalFilesList();
+
+		return Mono.just(new FileListJson(metaList, metaList.size()));
 	}
 	
 	@GetMapping("/files/refresh")
@@ -95,17 +97,17 @@ public class FileController {
 		return zeroCopyHttpOutputMessage.writeWith(f, 0, len);
 	}
 
-	// Single File Upload
-	@PostMapping("/upload/single")
-	public Mono<Void> uploadFile(@RequestPart("file") Mono<FilePart> filePartMono) {
-		return filePartMono
-				.doOnNext(fp -> System.out.println("Received File : " + fp.filename()))
-				.flatMap(fp -> fp.transferTo(fs.getSyncDir().resolve(fp.filename())))
-				.then();
-	}
+//	// Single File Upload
+//	@PostMapping("/upload/single")
+//	public Mono<Void> uploadFile(@RequestPart("file") Mono<FilePart> filePartMono) {
+//		return filePartMono
+//				.doOnNext(fp -> System.out.println("Received File : " + fp.filename()))
+//				.flatMap(fp -> fp.transferTo(fs.getSyncDir().resolve(fp.filename())))
+//				.then();
+//	}
 
-	// multiple file upload
-	@PostMapping("/upload/multi")
+	// file upload endpoint - support both multiple and single file upload
+	@PostMapping("/upload")
 	public Mono<Void> uploadMultipleFiles(@RequestPart("files") Flux<FilePart> partFlux) {
 		System.out.println("MULTIPLE FILES ARE INFILTRATING FROM THE MAIN GATE");
 		return partFlux

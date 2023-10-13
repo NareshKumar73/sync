@@ -1,17 +1,17 @@
 package com.source.open;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
@@ -34,7 +34,7 @@ public class ClientService {
 	@Autowired 
 	private FileService fs;
 	
-	private String host;
+//	private String host;
 	
 	@Value("${server.port}")
 	private Integer port;
@@ -44,7 +44,7 @@ public class ClientService {
 	public ClientService() throws UnknownHostException {
 		super();
 		
-		host = InetAddress.getLocalHost().getHostAddress();
+//		host = InetAddress.getLocalHost().getHostAddress();
 		
 		httpClient = HttpClient.newBuilder().build();
 	}
@@ -147,7 +147,7 @@ public class ClientService {
 		
 		HttpClient httpClient = HttpClient
 								.newBuilder()
-								.connectTimeout(Duration.ofMinutes(15))
+//								.connectTimeout(Duration.ofMinutes(15))	//	TESTING CODE NOT NEEDED IN PRODUCTION
 								.build();
 
 		HttpRequest request = HttpRequest
@@ -155,22 +155,85 @@ public class ClientService {
 								.uri(URI.create(remoteFileUrl))
 								.build();
 
-		File d = fs.createFile(localFilePath).toFile();		
+		fs.createFile(localFilePath);
 
 		httpClient
 		.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
 		.thenApply(HttpResponse::body)
 		.thenAccept(responseBody -> {
-			try (BufferedInputStream reader = new BufferedInputStream(responseBody, 32768);
-				BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(d), 32768)) {
-				
-				reader.transferTo(writer);
+			try {
+//				THIS CODE SHOULD BE MORE PERFORMANT
+				Files.copy(responseBody, localFilePath, StandardCopyOption.REPLACE_EXISTING);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 				
         });
+
+//		httpClient
+//		.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
+//		.thenApply(HttpResponse::body)
+//		.thenAccept(responseBody -> {
+//			try (BufferedInputStream reader = new BufferedInputStream(responseBody, 32768);
+//				BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(d), 32768)) {
+//				
+//				reader.transferTo(writer);
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//				
+//        });
 	}
+	
+//	void fileReader() {
+//		try (SeekableByteChannel ch = java.nio.file.Files.newByteChannel(Paths.get(fileName), StandardOpenOption.READ)) {
+//		    ByteBuffer bf = ByteBuffer.allocate(1000);
+//		    while (ch.read(bf) > 0) {
+//		        bf.flip();
+//		        // System.out.println(new String(bf.array()));
+//		        bf.clear();
+//		    }
+//		}
+//	}
+//	
+//	void bestFileWriter( ) {
+//		
+////		GOOD
+//		try (BufferedInputStream in = new BufferedInputStream(new URL(FILE_URL).openStream());
+//				  FileOutputStream fileOutputStream = new FileOutputStream(FILE_NAME)) {
+//				    byte dataBuffer[] = new byte[1024];
+//				    int bytesRead;
+//				    while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+//				        fileOutputStream.write(dataBuffer, 0, bytesRead);
+//				    }
+//				} catch (IOException e) {
+//				    // handle exception
+//				}
+//		
+////		BETTER
+//		ReadableByteChannel readableByteChannel = Channels.newChannel(url.openStream());
+//		FileOutputStream fileOutputStream = new FileOutputStream(FILE_NAME);
+//		FileChannel fileChannel = fileOutputStream.getChannel();
+//		fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+//	}
+//	
+//	void resumableDownload() {
+//		
+//		URL url = new URL(FILE_URL);
+//		HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
+//		httpConnection.setRequestMethod("HEAD");
+//		long removeFileSize = httpConnection.getContentLengthLong();
+//		
+//		long existingFileSize = outputFile.length();
+//		if (existingFileSize < fileLength) {
+//		    httpFileConnection.setRequestProperty(
+//		      "Range", 
+//		      "bytes=" + existingFileSize + "-" + fileLength
+//		    );
+//		}
+//		
+//		OutputStream os = new FileOutputStream(FILE_NAME, true);
+//	}
 
 }
 

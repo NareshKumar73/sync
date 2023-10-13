@@ -2,6 +2,7 @@ package com.source.open;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,6 +15,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.source.open.payload.FileMeta;
@@ -32,6 +34,10 @@ public class FileService {
 	
 	private final LinkedHashMap<String, FileMeta> localFiles;
 	
+	private String host;
+	
+	@Value("${server.port}")
+	private Integer port;
 
 	public FileService() throws IOException {
 		super();
@@ -42,6 +48,8 @@ public class FileService {
 		
 		base64Encoder = Base64.getUrlEncoder().withoutPadding();
 		localFiles = new LinkedHashMap<>();
+		
+		host = InetAddress.getLocalHost().getHostAddress();
 	}
 	
 	public Path createFolder(Path p) throws IOException {
@@ -86,8 +94,10 @@ public class FileService {
 				
 				String urlSafeFilename = new String(base64Encoder.encode(f.getName().getBytes()));
 				
-				
+				String downloadLink = "http://" + host + ":" + port + "/download?filecode=" + urlSafeFilename;
+		
 						FileMeta fm = new FileMeta(
+											downloadLink,
 											urlSafeFilename, 
 											f.getName(), 
 											friendlyFileSize(f.length()),
