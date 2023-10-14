@@ -125,7 +125,6 @@ public class CustomFileReader {
 		try {
 			d = createNonExistingPathAndGet(dest, true).toFile();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

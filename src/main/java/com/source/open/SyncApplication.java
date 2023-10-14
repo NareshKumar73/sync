@@ -10,8 +10,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class SyncApplication implements CommandLineRunner {
 	
-	@Autowired
-	private ClientService cs;
+	// @Autowired
+	// private ClientService cs;
 	
 	@Autowired
 	private FileService fs;

@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 public class PageController {
 	
 	private final FileService fs;
-
 	
 	@GetMapping("/")
 	public String home() {
@@ -22,6 +21,11 @@ public class PageController {
 	public String download(Model model) {
 		model.addAttribute("files", fs.getLocalFilesList());
 		return "index";
+	}
+
+	@GetMapping("/upload-page")
+	public String upload() {
+		return "file-upload";
 	}
 
 }

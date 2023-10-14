@@ -32,5 +32,8 @@ build/
 ### VS Code ###
 .vscode/
 
+### THEIA ###
+.theia/
+
 sync-resource/
 MOVIES/
