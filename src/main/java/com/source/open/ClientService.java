@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -41,7 +40,7 @@ public class ClientService {
 	
 	private HttpClient httpClient;
 
-	public ClientService() throws UnknownHostException {
+	public ClientService() {
 		super();
 		
 //		host = InetAddress.getLocalHost().getHostAddress();
@@ -141,9 +140,9 @@ public class ClientService {
 	}
 	
 //	NOT WORKING URL
-	public void downloadFileSynchronously(String remoteFileUrl, Path localFilePath) throws IOException {
+	public void downloadFileSynchronously(String remoteFileUrl, String filename) throws IOException {
 		
-		System.out.println("Remote Filecode: " + remoteFileUrl + " Local File: " + localFilePath);
+		System.out.println("Remote Filecode: " + remoteFileUrl + " Local File: " + filename);
 		
 		HttpClient httpClient = HttpClient
 								.newBuilder()
@@ -155,7 +154,9 @@ public class ClientService {
 								.uri(URI.create(remoteFileUrl))
 								.build();
 
-		fs.createFile(localFilePath);
+		Path dest = fs.getSyncDir().resolve(filename);
+
+		fs.createFile(dest);
 
 		httpClient
 		.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
@@ -163,7 +164,7 @@ public class ClientService {
 		.thenAccept(responseBody -> {
 			try {
 //				THIS CODE SHOULD BE MORE PERFORMANT
-				Files.copy(responseBody, localFilePath, StandardCopyOption.REPLACE_EXISTING);
+				Files.copy(responseBody, dest, StandardCopyOption.REPLACE_EXISTING);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -184,6 +185,37 @@ public class ClientService {
 //				
 //        });
 	}
+	
+//	TO MANAGE OVERLAPPING RANGE IN DOWNLOAD
+//	public void mergeInterval(HttpRange[] rangeList, long fileSize) {
+//
+//		if (rangeList.length == 1)
+//			return;
+//
+//		Arrays.sort(rangeList, (o1, o2) -> {
+//			if (o1.getRangeStart(fileSize) > o2.getRangeStart(fileSize))
+//				return 0;
+//			else if (o1.getRangeStart(fileSize) > o2.getRangeStart(fileSize))
+//				return 1;
+//			else
+//				return -1;
+//		});
+//
+//		int index = 0;
+//		for (int i = 1; i < rangeList.length; i++) {
+//			if (rangeList[index].getRangeEnd(fileSize) >= rangeList[i].getRangeStart(fileSize)) {
+//
+//				long end = Math.max(rangeList[index].getRangeEnd(fileSize), rangeList[i].getRangeEnd(fileSize));
+//				
+//				rangeList[index] = HttpRange.createByteRange(rangeList[index].getRangeStart(fileSize), end);
+//			}
+//			else {
+//				index++;
+//				rangeList[index] = rangeList[i];
+//			}
+//		}
+//
+//	}
 	
 //	void fileReader() {
 //		try (SeekableByteChannel ch = java.nio.file.Files.newByteChannel(Paths.get(fileName), StandardOpenOption.READ)) {

@@ -94,7 +94,9 @@ public class FileService {
 				
 				String urlSafeFilename = new String(base64Encoder.encode(f.getName().getBytes()));
 				
-				String downloadLink = "http://" + host + ":" + port + "/download?filecode=" + urlSafeFilename;
+//				String downloadLink = "http://" + host + ":" + port + "/dl?filecode=" + urlSafeFilename;
+				String downloadLink = "http://" + host + ":" + port + "/part?filecode=" + urlSafeFilename;
+//				String downloadLink = "http://" + host + ":" + port + "/download?filecode=" + urlSafeFilename;
 		
 						FileMeta fm = new FileMeta(
 											downloadLink,
