@@ -47,7 +47,7 @@ public class ServerSearch implements Runnable {
 
 				nu.getActiveNodes().put(remoteIp, Integer.parseInt(new String(dp.getData(), 0, dp.getLength())));
 
-				byte[] msg = (nu.getUdpPort() + "").getBytes();
+				byte[] msg = (nu.getServerPort() + "").getBytes();
 
 				dp = new DatagramPacket(msg, msg.length, remoteAddress, nu.getUdpPort());
 

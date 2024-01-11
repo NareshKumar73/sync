@@ -57,9 +57,9 @@ public class SyncApplication implements CommandLineRunner {
 
 //		IF NO IP FOUND THEN EXIT
 		if (nu.getLocalIpList().isEmpty()) {
-			System.out.println("NO IP FOUND. ARE YOU CONNECTED TO THE ROUTER OR WIFI.");
+			System.out.println("No IP found. Check your network card.");
 			
-			SpringApplication.exit(appContext, () -> {
+ 			SpringApplication.exit(appContext, () -> {
 				return 9;
 			});
 			
@@ -81,6 +81,12 @@ public class SyncApplication implements CommandLineRunner {
 		System.out.println("WELCOME TO SYNC APP v0.1");
 
 		System.out.println("SYNC SERVICE WITHOUT DISCOVERY AND SYNC FEATURE.\nFILE SHARING SUPPORT ONLY.");
+		
+		try {
+			Thread.sleep(20000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		
 		refreshServerList();
 		
@@ -228,8 +234,7 @@ public class SyncApplication implements CommandLineRunner {
 
 //downloadableFiles.forEach((fileCode, files) -> {
 //
-////	IF MORE THAN ONE FILE AVAILABLE FOR A FILECODE THEN TODO
-////	FOR NOW DOWNLOAD FIRST FILE IN THE LIST
+////	TODO IF MORE THAN ONE FILE AVAILABLE FOR A FILECODE THEN FOR NOW DOWNLOAD FIRST FILE IN THE LIST
 //
 ////	API CALL WAS NOT WAITING FOR COMPLETION - NOW USING BLOCING CODE INSTEAD
 //	FileMeta meta = files.get(0);

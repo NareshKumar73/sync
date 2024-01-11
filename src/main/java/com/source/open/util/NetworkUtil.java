@@ -35,26 +35,23 @@ public class NetworkUtil {
 
 	private InetAddress broadcastIp;
 
-	private Integer udpPort;
-
 	@Value("${server.port}")
 	private Integer serverPort;
+	
+	private Integer udpPort = 50505;
 
 	@Setter
 	private boolean needed = true;
-	
 
-	public NetworkUtil(@Value("${udp.port:50505}") Integer udpPort) {
+	public NetworkUtil() {
 		try {
-			this.udpPort = udpPort;
 			udpServer = new DatagramSocket(udpPort);
-			udpServer.setSoTimeout(15000);
+//			udpServer.setSoTimeout(15000);
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
 	}
 	
-
 //	public DatagramSocket getUdpServer() {
 //
 //		if (udpServer == null) {
@@ -82,7 +79,7 @@ public class NetworkUtil {
 
 	public void sendEcho() {
 		try {
-			byte[] msg = (udpPort + "").getBytes();
+			byte[] msg = (serverPort + "").getBytes();
 			getUdpServer().send(new DatagramPacket(msg, msg.length, getBroadcastIp(), udpPort));
 		} catch (IOException e) {
 			e.printStackTrace();
