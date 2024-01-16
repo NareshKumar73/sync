@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -21,11 +22,10 @@ import lombok.Setter;
 @Service
 public class NetworkUtil {
 
-
-//	THIS DEVICE IP LIST - IP & IS IT REACHABLE FROM LAN
+//	THIS DEVICE IP LIST - IP & BOOLEAN INDICATING IF IT IS REACHABLE FROM LAN
 	private final ConcurrentHashMap<String, Boolean> localIpList = new ConcurrentHashMap<>();
 
-//	DEVICE OVER LAN WITH THIS SOFTWARE - IP & PORT
+//	DEVICE OVER LAN WITH THIS SOFTWARE RUNNING - THEIR -> IP & PORT
 	private final ConcurrentHashMap<String, Integer> activeNodes = new ConcurrentHashMap<>();
 	
 //	DEVICE OVER LAN WITH THIS SOFTWARE INSTALLED
@@ -33,17 +33,24 @@ public class NetworkUtil {
 
 	private DatagramSocket udpServer;
 
+//	Can be replaced with found IP function to search all broadcast address and then using this list to broadcast discovery packet 
+//	if this global broadcast doesn't work correctly.
 	private InetAddress broadcastIp;
 
-	@Value("${server.port}")
 	private Integer serverPort;
+	
+	private byte[] msg;
 	
 	private Integer udpPort = 50505;
 
 	@Setter
 	private boolean needed = true;
 
-	public NetworkUtil() {
+	public NetworkUtil(@Value("${server.port}") Integer serverPort) {
+		
+		this.serverPort = serverPort;
+		this.msg = (serverPort + "").getBytes(StandardCharsets.US_ASCII);	
+		
 		try {
 			udpServer = new DatagramSocket(udpPort);
 //			udpServer.setSoTimeout(15000);
@@ -52,20 +59,6 @@ public class NetworkUtil {
 		}
 	}
 	
-//	public DatagramSocket getUdpServer() {
-//
-//		if (udpServer == null) {
-//			try {
-//				udpServer = new DatagramSocket(udpPort);
-//				udpServer.setSoTimeout(15000);
-//			} catch (SocketException e) {
-//				e.printStackTrace();
-//			}
-//		}
-//
-//		return udpServer;
-//	}
-
 	public InetAddress getBroadcastIp() {
 		if (broadcastIp == null)
 			try {
@@ -79,8 +72,7 @@ public class NetworkUtil {
 
 	public void sendEcho() {
 		try {
-			byte[] msg = (serverPort + "").getBytes();
-			getUdpServer().send(new DatagramPacket(msg, msg.length, getBroadcastIp(), udpPort));
+			udpServer.send(new DatagramPacket(msg, msg.length, getBroadcastIp(), udpPort));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

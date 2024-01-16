@@ -3,6 +3,7 @@ package com.source.open.util;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 
 public class ServerSearch implements Runnable {
 
@@ -26,7 +27,7 @@ public class ServerSearch implements Runnable {
 
 				nu.getUdpServer().receive(dp);
 
-				System.out.println("Received: " + new String(dp.getData()));
+				System.out.println("Received: " + new String(dp.getData(), StandardCharsets.US_ASCII));
 
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -45,9 +46,9 @@ public class ServerSearch implements Runnable {
 
 			if (!nu.getActiveNodes().containsKey(remoteIp)) {
 
-				nu.getActiveNodes().put(remoteIp, Integer.parseInt(new String(dp.getData(), 0, dp.getLength())));
+				nu.getActiveNodes().put(remoteIp, Integer.parseInt(new String(dp.getData(), 0, dp.getLength(), StandardCharsets.US_ASCII)));
 
-				byte[] msg = (nu.getServerPort() + "").getBytes();
+				byte[] msg = nu.getMsg();
 
 				dp = new DatagramPacket(msg, msg.length, remoteAddress, nu.getUdpPort());
 
