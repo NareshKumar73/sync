@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -16,7 +14,6 @@ import org.springframework.context.ApplicationContext;
 
 import com.source.open.exception.ResourceNotFoundException;
 import com.source.open.payload.FileMeta;
-import com.source.open.util.ClientService;
 import com.source.open.util.FileService;
 import com.source.open.util.NetworkUtil;
 import com.source.open.util.ServerSearch;
@@ -26,8 +23,8 @@ import jakarta.annotation.PreDestroy;
 @SpringBootApplication
 public class SyncApplication implements CommandLineRunner {
 
-	@Autowired
-	private ClientService cs;
+//	@Autowired
+//	private ClientService cs;
 
 	@Autowired
 	private FileService fs;
@@ -83,52 +80,14 @@ public class SyncApplication implements CommandLineRunner {
 		System.out.println("SYNC SERVICE WITHOUT DISCOVERY AND SYNC FEATURE.\nFILE SHARING SUPPORT ONLY.");
 		
 		try {
-			Thread.sleep(10000);
+			Thread.sleep(5000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 		
-		refreshServerList();
+		nu.refreshServerList();
 		
 		sync();
-	}
-	
-	public void refreshServerList() {
-////		REMOVE PREVIOUS SERVER 
-////		NOT NEEDED JUST CALL ON THEIR ENDPOINT AND REMOVE THEM
-//		nu.getServers().clear();
-
-//		NOW SEND ECHO SIGNAL AND WAIT FOR ACTIVE NODES
-		nu.sendEcho();
-
-		Map<String,CompletableFuture<Integer>> response = new HashMap<>();
-
-//		SEND ECHO TO ALL FOUND IP
-		for (Map.Entry<String, Integer> entry : nu.getActiveNodes().entrySet()) {
-
-			String url = "http://" + entry.getKey() + ":" + entry.getValue();
-			
-			response.put(url, cs.pingServer(url));
-		}
-				
-//		IF ANY IP RETURN 200 THEN PUT IT IN THE ONLINE SERVER LIST
-		for (Map.Entry<String, CompletableFuture<Integer>> entry : response.entrySet()) {
-			Integer status = 404;
-			try {
-				status = entry.getValue().get();
-			} catch (InterruptedException | ExecutionException e) {
-				e.printStackTrace();
-			}
-
-			if (status == 200)
-				nu.getSyncServers().add(entry.getKey());
-		}
-		
-		System.out.println(nu.getSyncServers());
-	}
-
-	public void syncFileWithServer(String ip) {
-		
 	}
 	
 	public void sync() {
@@ -160,7 +119,7 @@ public class SyncApplication implements CommandLineRunner {
 		
 
 		nu.getSyncServers().forEach(url -> {
-			cs.fetchFileList(url).getFiles().forEach(file -> {
+			nu.fetchFileList(url).getFiles().forEach(file -> {
 
 //				IF FILE IS NOT AVAILABLE LOCALLY THEN ADD TO DOWNLOAD LIST
 				if (!localFiles.containsKey(file.getCode())) {
@@ -176,7 +135,7 @@ public class SyncApplication implements CommandLineRunner {
 		downloadableFiles.forEach((baseUrl, files) -> {
 			files.forEach(file -> {
 				try {
-					cs.downloadFileSynchronously(baseUrl + file.getUrl(), file.getName());
+					nu.downloadFileSynchronously(baseUrl + file.getUrl(), file.getName());
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.err.println("Failed to download " + file.getName() + " from server " + baseUrl);

@@ -51,11 +51,11 @@ public class ClientService {
 	}
 	
 	public FileListJson fetchFileList(String url) {
-		
+
 		return WebClient
 				.create()
 				.get()
-				.uri(url + "/files")
+				.uri(url + "/files/refresh")
 				.accept(MediaType.APPLICATION_JSON)
 				.retrieve().bodyToMono(FileListJson.class)
 				.block();		

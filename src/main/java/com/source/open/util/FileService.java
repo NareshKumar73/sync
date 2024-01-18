@@ -87,7 +87,8 @@ public class FileService {
 				
 				String urlSafeFilename = new String(base64Encoder.encode(f.getName().getBytes()));
 				
-				String downloadLink = "/part?filecode=" + urlSafeFilename;
+//				String downloadLink = "/part?filecode=" + urlSafeFilename;
+				String downloadLink = "/resource?filecode=" + urlSafeFilename;
 //				String downloadLink = "http://" + host + ":" + port + "/dl?filecode=" + urlSafeFilename;
 //				String downloadLink = "http://" + host + ":" + port + "/download?filecode=" + urlSafeFilename;
 		
