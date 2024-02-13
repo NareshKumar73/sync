@@ -24,3 +24,8 @@ body {
 .filename {
 	word-break: break-all;
 }
+
+.stick {
+	top: -3px;
+	position: sticky;
+}

@@ -92,9 +92,9 @@ public class NetworkUtil {
 	}
 
 //	FETCH ALL LOCAL IP AND STORE FOR LATER USE
-	public void discoverLocalIpList() {
-
-		localIpList.clear();
+	public Map<String, Boolean> discoverLocalIpList() {
+		
+		Map<String, Boolean> map = new HashMap<>();
 
 		try {
 			Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
@@ -108,14 +108,19 @@ public class NetworkUtil {
 					InetAddress ip = ipList.nextElement();
 
 					if (ip.isSiteLocalAddress())
-						localIpList.put(ip.getHostAddress(), false);
+						map.put(ip.getHostAddress(), false);
 				}
 			}
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
+		
+		localIpList.clear();
+		localIpList.putAll(map);
 
 		System.out.println("IP found in LAN\n" + localIpList);
+		
+		return map;
 	}
 
 	public void refreshServerList() {
@@ -175,7 +180,6 @@ public class NetworkUtil {
 				.onErrorReturn(new FileListJson())
 				.block();
 	}
-	
 	
 	public void downloadFileSynchronously(String remoteFileUrl, String filename) throws IOException {
 		

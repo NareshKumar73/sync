@@ -31,16 +31,16 @@ public class SyncApplication implements CommandLineRunner {
 
 	@Autowired
 	private NetworkUtil nu;
-	
+
 	@Autowired
 	private ApplicationContext appContext;
-	
+
 	private Thread discoveryServer;
-	
+
 	public static void main(String[] args) {
 		SpringApplication.run(SyncApplication.class, args);
 	}
-	
+
 	@PreDestroy
 	public void destroy() {
 		nu.getUdpServer().close();
@@ -48,27 +48,27 @@ public class SyncApplication implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) {
-		
-		if (nu.getLocalIpList().isEmpty()) 
+
+		if (nu.getLocalIpList().isEmpty())
 			nu.discoverLocalIpList();
 
 //		IF NO IP FOUND THEN EXIT
 		if (nu.getLocalIpList().isEmpty()) {
 			System.out.println("No IP found. Check your network card.");
-			
- 			SpringApplication.exit(appContext, () -> {
+
+			SpringApplication.exit(appContext, () -> {
 				return 9;
 			});
-			
+
 			System.exit(9);
 		}
-		
+
 		discoveryServer = new Thread(new ServerSearch(nu));
 
 		discoveryServer.setDaemon(true);
 
 		discoveryServer.start();
-		
+
 //		try {
 //			Thread.sleep(5000);
 //		} catch (InterruptedException e) {
@@ -78,18 +78,18 @@ public class SyncApplication implements CommandLineRunner {
 		System.out.println("WELCOME TO SYNC APP v0.1");
 
 		System.out.println("SYNC SERVICE WITHOUT DISCOVERY AND SYNC FEATURE.\nFILE SHARING SUPPORT ONLY.");
-		
+
 		try {
 			Thread.sleep(5000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		
+
 		nu.refreshServerList();
-		
+
 		sync();
 	}
-	
+
 	public void sync() {
 
 		if (nu.getLocalIpList().isEmpty())
@@ -100,23 +100,21 @@ public class SyncApplication implements CommandLineRunner {
 
 //		FILE CODE - OBJECT
 		Map<String, FileMeta> localFiles = fs.getLocalFiles();
-		
-		
+
 //		------------------------------	PING IP LIST AND POPULATE SYNC SERVER	------------------------------
 
 //		------------------------------			FETCH DOWNLOADABLE FILE			------------------------------
-		
+
 //		FETCH FILE LIST FROM EACH SERVER AND PUT IT IN A LIST OF FILE URLs
 //		URL - FILES
 //		ONLY FILES THAT ARE NOT ALREADY AVAILABLE IS DOWNLOADED IN THIS RELEASE
 		Map<String, List<FileMeta>> downloadableFiles = new HashMap<>();
-		
+
 		nu.getSyncServers().forEach(url -> {
 			downloadableFiles.put(url, new ArrayList<>());
 		});
-		
+
 //		FILECODE - FILE LIST TODO IN FUTURE RELEASE WILL HAVE OPTION TO REPLACE EXISTING FILES WITH OTHER SERVER FILE 
-		
 
 		nu.getSyncServers().forEach(url -> {
 			nu.fetchFileList(url).getFiles().forEach(file -> {
@@ -130,7 +128,7 @@ public class SyncApplication implements CommandLineRunner {
 		});
 
 		System.out.println("FILES :\n" + downloadableFiles);
-		
+
 //		DOWNLOAD ALL FILES IN DOWNLOAD LIST
 		downloadableFiles.forEach((baseUrl, files) -> {
 			files.forEach(file -> {
@@ -169,8 +167,6 @@ public class SyncApplication implements CommandLineRunner {
 //duplicateFiles.get(file.getCode()).add(file);
 //}
 
-
-
 //String leftPart = host.substring(0, host.lastIndexOf('.') + 1);
 
 //Map<String, CompletableFuture<Integer>> serverStatusMap = new HashMap<>();
@@ -183,13 +179,11 @@ public class SyncApplication implements CommandLineRunner {
 //	serverStatusMap.put(server_ip, cs.checkServer(server_ip));
 //}
 
-
 //try {
 //	Thread.sleep(25000);
 //} catch (InterruptedException e) {
 //	e.printStackTrace();
 //}
-
 
 //downloadableFiles.forEach((fileCode, files) -> {
 //
