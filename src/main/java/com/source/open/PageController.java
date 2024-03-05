@@ -32,4 +32,20 @@ public class PageController {
 		return "file-upload";
 	}
 
+	@GetMapping("/simple")
+	public String simpleUpload() {
+		return "simple-upload";
+	}
+
+	@GetMapping("/drop")
+	public String drop() {
+		return "file-drop1";
+	}
+	
+	@GetMapping("/u")
+	public String u() {
+		return "upload";
+	}
+
+
 }

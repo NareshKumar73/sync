@@ -1,0 +1,111 @@
+server:
+  port: 9005
+#  http2: 
+#    enabled: true
+#  compression:
+#    enabled: true
+#    mime-types: text/html,text/plain,text/css,application/javascript,application/json
+#    min-response-size: 1024
+  
+#  servlet:
+#    session:
+#      timeout: 60m
+spring:
+  application:
+    name: sync
+  codec:
+    max-in-memory-size: 10MB
+        
+#  autoconfigure:
+#    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+#  data:
+#    redis:
+#      host: 192.168.29.209
+#      port: 6379
+#    hikari:
+#      connection-timeout: 30000
+#      idle-timeout: 30000
+#      leak-detection-threshold: 5000
+#      maximum-pool-size: 5
+#      max-lifetime: 2000000
+#      minimum-idle: 1
+#      pool-name: SwimmingPool
+#  datasource:
+#    url: jdbc:h2:mem:sync
+##    url: jdbc:h2:file:/data/demo
+#    username: sa
+#    password: password
+#    driverClassName: org.h2.Driver
+#  jpa:
+#    hibernate:
+#      ddl-auto: none
+#    open-in-view: false
+#    properties:
+#      hibernate: 
+#        dialect: org.hibernate.dialect.H2Dialect
+#        '[format_sql]': true
+##        '[generate_statistics]': true
+#        '[order_inserts]': true
+#        jdbc: 
+#          '[batch_size]': 50
+#    show-sql: true
+  # servlet:
+  #   multipart:
+  #     max-file-size: 5MB
+  #     max-request-size: 5MB
+#  jackson:
+#    serialization:
+#      WRITE_DATES_AS_TIMESTAMPS: false
+                
+#logging: 
+##  file:
+##    name: honda-tracking-system.log
+#  level: 
+##    '[com.zaxxer.hikari]': DEBUG
+#    org: 
+#      springframework: 
+#        security: WARN
+#    com: 
+#      source: 
+#        close: INFO
+#  pattern: 
+#    dateformat: "yyyy-MMM-dd HH:mm:ss.SSS"
+#  session:
+#    datasource:
+#      password: demo
+#      url: jdbc:h2:mem:sessions
+#      username: demo
+#
+#spring.jpa.properties.hibernate.jdbc.batch_size=4
+#spring.jpa.properties.hibernate.order_inserts=true
+#project: 
+#  image: images/
+
+#    url: jdbc:mysql://localhost:3306/oee-app?useSSL=false&createDatabaseIfNotExist=true
+
+#    hikari:
+#      connection-timeout: 30000
+#      idle-timeout: 600000
+#      leak-detection-threshold: 
+#      maximum-pool-size: 210
+#      max-lifetime: 1800000
+#      minimum-idle: 10
+#      pool-name: HikariPool-1
+      
+#          '[storage_engine]': innodb
+#  mail:
+#    host: mail.uniconvergetech.in
+#    password: haldiram@12345
+#    port: 587
+#    properties:
+#      mail:
+#        smtp:
+#          auth: true
+#          ssl:
+#            enable: false
+#          starttls:
+#            enable: false
+#        transport:
+#          protocol: smtp
+#    username: haldiram.testing@uniconvergetech.in
+

@@ -2,6 +2,7 @@ package com.source.open;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.source.open.payload.ApiMessage;
 import com.source.open.payload.FileListJson;
@@ -219,7 +221,7 @@ public class FileController {
 	
 	// file upload endpoint - support both multiple and single file upload
 	@PostMapping("/upload")
-	public Mono<Void> uploadMultipleFiles(@RequestPart("files") Flux<FilePart> partFlux) {
+	public Mono<Void> uploadMultipleFiles(@RequestPart("file") Flux<FilePart> partFlux) {
 		System.out.println("MULTIPLE FILES ARE INFILTRATING FROM THE MAIN GATE");
 		return partFlux.doOnNext(fp -> System.out.println("Received File : " + fp.filename()))
 				.flatMap(fp -> fp.transferTo(fs.getSyncDir().resolve(fp.filename()))).then();

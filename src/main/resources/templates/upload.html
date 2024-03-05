@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head>
+	<title>SYNC - KING</title>
+
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta name="description" content="File sharing platform within a LAN Network">
+	<meta name="author" content="Naresh Kumar">
+
+	<link rel="stylesheet" type="text/css" media="all" href="../static/bootstrap/bootstrap.css"
+		th:href="@{/bootstrap/bootstrap.css}">
+
+	<link rel="stylesheet" type="text/css" media="all" href="../static/dropzone/dropzone.css"
+		th:href="@{/dropzone/dropzone.css}">
+</head>
+
+<body>
+	<div class="container mt-4 d-flex justify-content-center">
+		<h1 class="text-dark">Upload Files</h1>
+	</div>
+	<div class="container mt-3">
+		<form action="/upload" th:action="@{/upload}" class="dropzone" id="airdrop">
+		</form>
+	</div>
+	<script src="../static/bootstrap/bootstrap.bundle.js" th:href="@{/bootstrap/bootstrap.bundle.js}"></script>
+	<script src="../static/dropzone/dropzone.js" th:src="@{/dropzone/dropzone.js}"></script>
+	<script>
+		let uploadzone;
+
+		let setup = () => {
+
+			uploadzone = Dropzone.instances[0];
+
+			if (uploadzone === undefined)
+				setTimeout(setup, 1000);
+			else {
+				document.getElementById("send").addEventListener('click', (event) => {
+					event.preventDefault();
+					console.log("click")
+					uploadzone.processQueue();
+				});
+
+				// uploadzone.on("complete", function (file) {
+				// 	uploadzone.removeFile(file);
+				// });
+			}
+		}
+
+		setup();
+	</script>
+</body>
+
+</html>
+
+<!-- <link rel="stylesheet" type="text/css" media="all" href="../static/dropzone/basic.css"
+		th:href="@{/dropzone/basic.css}"> -->
+
+<!-- <link rel="stylesheet" type="text/css" media="all" href="../static/css/upload.css" th:href="@{/css/upload.css}"> -->
+
+<!-- // Dropzone.options.warzone = {
+
+	// 	url: "/upload",
+	// 	method: "post",
+	// 	parallelUploads: 3,
+	// 	uploadMultiple: true,
+	// } -->
+
+
+<!-- <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />		 -->
+<!-- <script src="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone-min.js"></script>
+	<link href="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone.css" rel="stylesheet" type="text/css" /> -->
+<!-- <script th:src="@{/bootstrap/bootstrap.bundle.js}"></script> -->
+
+<!-- <script>
+		let myDropzone = new Dropzone("#my-awesome-dropzone", { url: "/upload"});
+    </script> -->
+<!--	<script src="../static/dropzone/dropzone.js" th:href="@{/dropzone/dropzone.js}"></script>
+-->
+
+<!-- // 	// url: null (set your upload endpoint here)
+// 	// method: "post" (default HTTP method)
+// 	// withCredentials: false (default behavior for XHR)
+// 	// timeout: null (no timeout by default)
+// 	// parallelUploads: 2 (allow multiple simultaneous uploads)
+// 	// uploadMultiple: false (doesn't send files in one request)
+// 	// chunking: false (disable file chunking)
+// 	// forceChunking: false (don't force chunking for any files)
+// 	// chunkSize: 2000000 (2MB chunk size for chunking)
+// 	// parallelChunkUploads: false (don't upload chunks in parallel)
+// 	// acceptedFiles: null (accept all file types)
+// 	// maxFiles: null (no limit on files)
+// 	// maxFileSize: null (no limit on file size)
+// 	// minFileSize: 0 (allow files of any size)
+// 	// autoProcessQueue: true (automatically upload files)
+// 	// addRemoveLinks: true (display remove links for files)
+// 	// renameFilename: null (don't rename files)
+// 	// previewTemplate: default preview template
+// 	// previewContainer: null (use default container)
+// 	// clickable: true (allow clicking on preview elements)
+// 	// createImageThumbnails: true (generate image thumbnails)
+// 	// maxThumbnailFilesize: 1000000 (1MB limit for thumbnail size)
+// 	// resizeWidth: null (don't resize images)
+// 	// resizeHeight: null (don't resize images)
+// 	// resizeMimeType: null (no specific mime type for resizing)
+// 	// autoQueueTimeout: null (no timeout for adding files)
+// 	// fallback: true (use fallback file input if browser doesn't support drag-and-drop)
+// 	// fallbackDirectory: '' (empty fallback directory)
+// 	// fallbackParamName: 'file' (name of the file parameter in the fallback form)
+// 	dictDefaultMessage: "Drag & drop files here or click to browse",
+// 	// ...other dictionary options for various messages -->
