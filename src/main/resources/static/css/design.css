@@ -2,6 +2,10 @@
 	word-break: break-all;
 }
 
+.path {
+	font-family: monospace, monospace;
+}
+
 .stick {
 	top: -3px;
 	position: sticky;

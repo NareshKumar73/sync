@@ -1,7 +1,7 @@
 package com.source.open;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,21 +10,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+//import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContext;
 
-import com.source.open.exception.ResourceNotFoundException;
 import com.source.open.payload.FileMeta;
 import com.source.open.util.FileService;
 import com.source.open.util.NetworkUtil;
-import com.source.open.util.ServerSearch;
 
-import jakarta.annotation.PreDestroy;
 
 @SpringBootApplication
 public class SyncApplication implements CommandLineRunner {
-
-//	@Autowired
-//	private ClientService cs;
 
 	@Autowired
 	private FileService fs;
@@ -33,73 +28,52 @@ public class SyncApplication implements CommandLineRunner {
 	private NetworkUtil nu;
 
 	@Autowired
-	private ApplicationContext appContext;
-
-	private Thread discoveryServer;
+	private ApplicationContext context;
 
 	public static void main(String[] args) {
 		SpringApplication.run(SyncApplication.class, args);
 	}
 
-	@PreDestroy
-	public void destroy() {
-		nu.getUdpServer().close();
-	}
-
 	@Override
-	public void run(String... args) {
-
-		if (nu.getLocalIpList().isEmpty())
-			nu.discoverLocalIpList();
-
-//		IF NO IP FOUND THEN EXIT
-		if (nu.getLocalIpList().isEmpty()) {
-			System.out.println("No IP found. Check your network card.");
-
-			SpringApplication.exit(appContext, () -> {
-				return 9;
-			});
-
-			System.exit(9);
-		}
-
-		discoveryServer = new Thread(new ServerSearch(nu));
-
-		discoveryServer.setDaemon(true);
-
-		discoveryServer.start();
-
-//		try {
-//			Thread.sleep(5000);
-//		} catch (InterruptedException e) {
-//			e.printStackTrace();
-//		}
-
-		System.out.println("WELCOME TO SYNC APP v0.1");
-
-		System.out.println("SYNC SERVICE WITHOUT DISCOVERY AND SYNC FEATURE.\nFILE SHARING SUPPORT ONLY.");
-
+	public void run(String... args) throws IOException {
+		
 		try {
-			Thread.sleep(5000);
+			Thread.sleep(Duration.ofSeconds(5));
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 
-		nu.refreshServerList();
+		System.out.println("WELCOME TO SYNC APP v0.1");
 
-		sync();
+		System.out.println("SYNC SERVICE WITHOUT DISCOVERY AND SYNC FEATURE.\nFILE SHARING SUPPORT ONLY.");
+		
+		fs.refreshFileList();
+
+//		nu.fetchLocalIpList();
+//		EXIT CODE 1 = NO IP FOUND VERY IMPORTANT
+		if (nu.getLocalIpList().isEmpty()) {
+			System.out.println("No IP found. Check your network card or wifi connection.");
+			
+			SpringApplication.exit(context, () -> {
+				return 1;
+			});
+			
+			System.exit(1);
+		}
+		
+		nu.startListening();
+
+		nu.refreshServerList();
+		
+//		sync();
 	}
 
 	public void sync() {
-
-		if (nu.getLocalIpList().isEmpty())
-			throw new ResourceNotFoundException("Unable to fetch local ip of this machine.");
-
 //		------------------------------		REFRESH LOCAL FILE LIST ONCE		------------------------------
 		fs.refreshFileList();
 
 //		FILE CODE - OBJECT
-		Map<String, FileMeta> localFiles = fs.getLocalFiles();
+//		Map<String, FileMeta> localFiles = fs.getLocalFiles();
 
 //		------------------------------	PING IP LIST AND POPULATE SYNC SERVER	------------------------------
 
@@ -110,34 +84,35 @@ public class SyncApplication implements CommandLineRunner {
 //		ONLY FILES THAT ARE NOT ALREADY AVAILABLE IS DOWNLOADED IN THIS RELEASE
 		Map<String, List<FileMeta>> downloadableFiles = new HashMap<>();
 
-		nu.getSyncServers().forEach(url -> {
-			downloadableFiles.put(url, new ArrayList<>());
-		});
-
-//		FILECODE - FILE LIST TODO IN FUTURE RELEASE WILL HAVE OPTION TO REPLACE EXISTING FILES WITH OTHER SERVER FILE 
-
-		nu.getSyncServers().forEach(url -> {
-			nu.fetchFileList(url).getFiles().forEach(file -> {
-
-//				IF FILE IS NOT AVAILABLE LOCALLY THEN ADD TO DOWNLOAD LIST
-				if (!localFiles.containsKey(file.getCode())) {
-
-					downloadableFiles.get(url).add(file);
-				}
-			});
-		});
+//		nu.getSyncServers().forEach(url -> {
+//			downloadableFiles.put(url, new ArrayList<>());
+//		});
+//
+////		FILECODE - FILE LIST TODO IN FUTURE RELEASE WILL HAVE OPTION TO REPLACE EXISTING FILES WITH OTHER SERVER FILE 
+//
+//		nu.getSyncServers().forEach(url -> {
+//			nu.fetchFileList(url).getFiles().forEach(file -> {
+//
+////				IF FILE IS NOT AVAILABLE LOCALLY THEN ADD TO DOWNLOAD LIST
+//				if (!localFiles.containsKey(file.getCode())) {
+//
+//					downloadableFiles.get(url).add(file);
+//				}
+//			});
+//		});
 
 		System.out.println("FILES :\n" + downloadableFiles);
 
 //		DOWNLOAD ALL FILES IN DOWNLOAD LIST
 		downloadableFiles.forEach((baseUrl, files) -> {
 			files.forEach(file -> {
-				try {
-					nu.downloadFileSynchronously(baseUrl + file.getUrl(), file.getName());
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.err.println("Failed to download " + file.getName() + " from server " + baseUrl);
-				}
+//				try {
+//					nu.downloadFileSynchronously(baseUrl + file.getUrl(), file.getName());
+					nu.downloadFileReactively(baseUrl + file.getUrl(), file.getName());
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//					System.err.println("Failed to download " + file.getName() + " from server " + baseUrl);
+//				}
 			});
 		});
 

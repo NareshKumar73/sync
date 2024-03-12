@@ -16,6 +16,7 @@ public class FileMeta {
 	private String url;
 	private String code;
 	private String name;
+	private String relativePath;
 	private String size;
 	private String LastModified;	
 

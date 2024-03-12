@@ -80,22 +80,25 @@ public class FileService {
 
 		try {
 			Files
-			.list(syncDir)
+			.walk(syncDir)	// NOW SUPPORT SUB DIRECTORY ACCESS
+//			.list(syncDir)	OLD METHOD FOR SINGLE DIRECTORY ACCESS
 			.filter(p -> Files.isRegularFile(p))
 			.forEach(path -> {
+				
 				File f = path.toFile();
 				
 				String urlSafeFilename = new String(base64Encoder.encode(f.getName().getBytes()));
 				
-//				String downloadLink = "/part?filecode=" + urlSafeFilename;
 				String downloadLink = "/resource?filecode=" + urlSafeFilename;
+//				String downloadLink = "/part?filecode=" + urlSafeFilename;
 //				String downloadLink = "http://" + host + ":" + port + "/dl?filecode=" + urlSafeFilename;
 //				String downloadLink = "http://" + host + ":" + port + "/download?filecode=" + urlSafeFilename;
-		
+				
 				FileMeta fm = new FileMeta(
 									downloadLink,
 									urlSafeFilename, 
 									f.getName(), 
+									syncDir.relativize(path.getParent()).toString(),
 									friendlyFileSize(f.length()),
 									new Date(f.lastModified()).toString(), 
 									f.length(), 
@@ -121,5 +124,45 @@ public class FileService {
 		
 		return localFiles.values().stream().toList();
 	}
-
+	
 }
+
+////NEW CODE
+//private final Path tempDir;
+//
+//tempDir = syncDir.resolveSibling(".tmp");
+//
+//public Mono<Void> mergeChunks(String filename) {
+//    Path mergedFile = syncDir.resolve(filename);
+//    try (OutputStream outputStream = Files.newOutputStream(mergedFile)) {
+//        int i = 0;
+//        while (true) {
+//            Path tempFile = tempDir.resolve(filename + ".part-" + i);
+//            if (!Files.exists(tempFile)) {
+//                break; // No more chunks to merge
+//            }
+//            Files.copy(tempFile, outputStream);
+//            Files.delete(tempFile); // Delete temporary chunk after merging
+//            i++;
+//        }
+//    } catch (IOException e) {
+//    	return Mono.error(e);
+//    }
+//    
+//    return Mono.empty(); // Signal successful merging
+//}
+//
+//public Mono<Void> writeChunk(String filename, DataBuffer dataBuffer) {
+//    Path tempFile = tempDir.resolve(filename);
+//    return Mono.fromRunnable(() -> {
+//        try {
+//            byte[] bytes = new byte[dataBuffer.readableByteCount()]; // Allocate byte array based on DataBuffer size
+//            dataBuffer.read(bytes); // Read data from DataBuffer into byte array
+//            Files.write(tempFile, bytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+//        } catch (IOException e) {
+//            throw new RuntimeException("Error writing chunk: " + e.getMessage(), e);
+//        } finally {
+////            dataBuffer.release();
+//        }
+//    });
+//}

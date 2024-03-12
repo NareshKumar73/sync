@@ -24,14 +24,16 @@
 		<div class="tabular">
 			<table class="table table-striped table-bordered border-dark">
 				<thead class="table-dark stick">
-					<tr class="h4">
+					<tr class="h5">
 						<th>Name</th>
+						<th>Path</th>
 						<th class="text-center">Link</th>
 					</tr>
 				</thead>
 				<tbody>
-					<tr class="h4" th:each="file : ${files}">
-						<td class="filename" th:text="${file.name}"></td>
+					<tr th:each="file : ${files}">
+						<td class="fs-6 filename" th:text="${file.name}"></td>
+						<td class="fs-6 path" th:text="${file.relativePath}"></td>
 						<td class="text-center"><a th:href="${file.url}"><button class="btn btn-success">Download</button></a></td>
 					</tr>
 				</tbody>

@@ -1,4 +1,4 @@
-package com.source.open;
+package com.source.open.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,34 +16,14 @@ public class PageController {
 	
 	private final FileService fs;
 	
-	@GetMapping("/")
-	public String home() {
-		return "index";
-	}
-	
-	@GetMapping("/download-page")
+	@GetMapping("/d")
 	public String download(Model model) {
 		model.addAttribute("files", fs.refreshFileList());
 		return "index";
 	}
-
-	@GetMapping("/upload-page")
-	public String upload() {
-		return "file-upload";
-	}
-
-	@GetMapping("/simple")
-	public String simpleUpload() {
-		return "simple-upload";
-	}
-
-	@GetMapping("/drop")
-	public String drop() {
-		return "file-drop1";
-	}
 	
 	@GetMapping("/u")
-	public String u() {
+	public String upload() {
 		return "upload";
 	}
 
