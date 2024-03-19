@@ -14,7 +14,8 @@ spring:
   application:
     name: sync
   codec:
-    max-in-memory-size: 10MB
+    max-in-memory-size: 64MB
+    
         
 #  autoconfigure:
 #    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration

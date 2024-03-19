@@ -25,7 +25,7 @@
 		<form action="/upload" th:action="@{/upload}" class="dropzone" id="airdrop">
 		</form>
 	</div>
-	<script src="../static/bootstrap/bootstrap.bundle.js" th:href="@{/bootstrap/bootstrap.bundle.js}"></script>
+	<script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
 	<script src="../static/dropzone/dropzone.js" th:src="@{/dropzone/dropzone.js}"></script>
 	<script>
 		let uploadzone;
@@ -33,16 +33,12 @@
 		let setup = () => {
 
 			uploadzone = Dropzone.instances[0];
-
+			
 			if (uploadzone === undefined)
 				setTimeout(setup, 1000);
 			else {
-				document.getElementById("send").addEventListener('click', (event) => {
-					event.preventDefault();
-					console.log("click")
-					uploadzone.processQueue();
-				});
-
+				uploadzone.options.maxFilesize = null;
+				
 				// uploadzone.on("complete", function (file) {
 				// 	uploadzone.removeFile(file);
 				// });
@@ -55,11 +51,12 @@
 
 </html>
 
-<!-- <link rel="stylesheet" type="text/css" media="all" href="../static/dropzone/basic.css"
-		th:href="@{/dropzone/basic.css}"> -->
-
-<!-- <link rel="stylesheet" type="text/css" media="all" href="../static/css/upload.css" th:href="@{/css/upload.css}"> -->
-
+<!--				document.getElementById("send").addEventListener('click', (event) => {
+					event.preventDefault();
+					console.log("click")
+					uploadzone.processQueue();
+				});
+-->
 <!-- // Dropzone.options.warzone = {
 
 	// 	url: "/upload",
