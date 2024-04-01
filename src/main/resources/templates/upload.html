@@ -22,7 +22,7 @@
 		<h1 class="text-dark">Upload Files</h1>
 	</div>
 	<div class="container mt-3">
-		<form action="/upload" th:action="@{/upload}" class="dropzone" id="airdrop">
+		<form action="/upload" th:action="@{/upload}" class="dropzone" id="air-drop">
 		</form>
 	</div>
 	<script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
@@ -33,12 +33,34 @@
 		let setup = () => {
 
 			uploadzone = Dropzone.instances[0];
-			
+
 			if (uploadzone === undefined)
 				setTimeout(setup, 1000);
 			else {
+
+				// Dropzone.options.airDrop = {
+				// 	init: function () {
+				// 		this.on("uploadProgress", (e) => {
+				// 			console.log(e.file + "\n" + e.progress + "\n" + e.bytesSent);
+				// 		});
+				// 	}
+				// };
+
 				uploadzone.options.maxFilesize = null;
-				
+
+				uploadzone.on("uploadprogress", (file, progress, bytesSent) => {
+					
+					if (file.previewElement) {
+						for (let node of file.previewElement.querySelectorAll("[data-dz-uploadprogress]")) {
+								console.log("PROGRESS " + (progress | 0));
+								node.innerHTML = `${progress | 0}%`;
+						}
+					}
+				});
+
+
+				//				document.getElementsByClassName("dz-upload")[0].innerText = "100%"
+
 				// uploadzone.on("complete", function (file) {
 				// 	uploadzone.removeFile(file);
 				// });
