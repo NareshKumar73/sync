@@ -9,6 +9,7 @@ import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.Base64.Encoder;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -19,7 +20,9 @@ import org.springframework.stereotype.Service;
 import com.source.open.payload.FileMeta;
 
 import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 @Getter
 @Service
 public class FileService {
@@ -32,6 +35,8 @@ public class FileService {
 	
 //	FILE CODE - FILE META
 	private final LinkedHashMap<String, FileMeta> localFiles;
+	
+	private final Comparator<FileMeta> modifiedDate = Comparator.comparingLong(FileMeta::getLastModifiedEpoch).reversed();
 	
 	public FileService() throws IOException {
 
@@ -114,6 +119,12 @@ public class FileService {
 			System.err.println("Failed to read file from file system.");
 		}
 		
+		files.sort(modifiedDate);
+		
+		if (log.isDebugEnabled()) {
+			files.forEach(log::debug);
+		}
+		
 		return files;
 	}
 	
@@ -122,7 +133,7 @@ public class FileService {
 		if(localFiles.isEmpty())
 			return refreshFileList();
 		
-		return localFiles.values().stream().toList();
+		return localFiles.values().stream().sorted(modifiedDate).toList();
 	}
 	
 }
