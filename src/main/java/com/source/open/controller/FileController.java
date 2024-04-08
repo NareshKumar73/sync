@@ -1,14 +1,20 @@
 package com.source.open.controller;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -23,6 +29,7 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,9 +41,11 @@ import com.source.open.payload.FileMeta;
 import com.source.open.util.FileService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Log4j2
 @CrossOrigin("*")
 @RequiredArgsConstructor
 @RestController
@@ -44,10 +53,8 @@ public class FileController {
 
 	private final FileService fs;
 
-	private final String content = "Superman and Supergirl "
-								+ "take on the cybernetic being known as Brainiac, "
-								+ "who boasts that he possesses the knowledge and strength "
-								+ "of 10,000 worlds.";
+	private final String content = "Superman and Supergirl " + "take on the cybernetic being known as Brainiac, "
+			+ "who boasts that he possesses the knowledge and strength " + "of 10,000 worlds.";
 
 	@GetMapping("/")
 	public Mono<ApiMessage> sync() {
@@ -75,9 +82,9 @@ public class FileController {
 
 		List<HttpRange> rangeList = request.getHeaders().getRange();
 
-		System.out.println("REQUEST:\n" + request.getHeaders());
+		log.debug("REQUEST:\n" + request.getHeaders());
 
-		System.out.println("RANGE: " + rangeList);
+		log.debug("RANGE: " + rangeList);
 
 		HttpHeaders headers = new HttpHeaders();
 
@@ -94,7 +101,7 @@ public class FileController {
 
 			headers.setContentLength(end - start + 1);
 
-			System.out.println("RESPONSE PARTIAL:\n" + headers);
+			log.debug("RESPONSE PARTIAL:\n" + headers);
 
 			return ResponseEntity.status(206).headers(headers).contentType(MediaType.TEXT_PLAIN)
 					.body(content.substring(start, end + 1));
@@ -103,7 +110,7 @@ public class FileController {
 
 			headers.setContentLength(content.length());
 
-			System.out.println("RESPONSE FULL:\n" + headers);
+			log.debug("RESPONSE FULL:\n" + headers);
 
 		}
 
@@ -112,10 +119,8 @@ public class FileController {
 	}
 
 	@GetMapping("/part")
-	public Mono<Void> downloadPartial(
-			@RequestParam(required = false) Optional<String> filename,
-			@RequestParam(required = false) Optional<String> filecode,
-			ServerHttpRequest request,
+	public Mono<Void> downloadPartial(@RequestParam(required = false) Optional<String> filename,
+			@RequestParam(required = false) Optional<String> filecode, ServerHttpRequest request,
 			ServerHttpResponse response) throws Exception {
 
 		if (filename.isEmpty() && filecode.isEmpty())
@@ -126,10 +131,10 @@ public class FileController {
 		if (filename.isPresent()
 				&& java.net.URLDecoder.decode(filename.get(), StandardCharsets.UTF_8).equals(filename.get())) {
 			p = Paths.get("sync-resource" + File.separator + filename.get());
-			System.out.println("Client " + request.getRemoteAddress() + " is trying to download: " + filename.get());
+			log.debug("Client " + request.getRemoteAddress() + " is trying to download: " + filename.get());
 		} else {
 			p = fs.getLocalFiles().get(filecode.get()).getPath();
-			System.out.println("Client " + request.getRemoteAddress() + " is trying to download: " + filecode.get());
+			log.debug("Client " + request.getRemoteAddress() + " is trying to download: " + filecode.get());
 		}
 
 		if (p == null)
@@ -165,9 +170,9 @@ public class FileController {
 
 		List<HttpRange> rangeList = request.getHeaders().getRange();
 
-		System.out.println("REQUEST:\n" + request.getHeaders());
+		log.debug("REQUEST:\n" + request.getHeaders());
 
-		System.out.println("RANGE: " + rangeList);
+		log.debug("RANGE: " + rangeList);
 
 		if (!rangeList.isEmpty()) {
 
@@ -180,7 +185,7 @@ public class FileController {
 
 			response.getHeaders().setContentLength(end - start + 1);
 
-			System.out.println("RESPONSE PARTIAL:\n" + response.getHeaders());
+			log.debug("RESPONSE PARTIAL:\n" + response.getHeaders());
 
 			response.setStatusCode(HttpStatusCode.valueOf(206));
 
@@ -193,44 +198,87 @@ public class FileController {
 
 		response.getHeaders().setContentLength(len);
 
-		System.out.println("RESPONSE FULL:\n" + response.getHeaders());
+		log.debug("RESPONSE FULL:\n" + response.getHeaders());
 
 		return zeroCopyHttpOutputMessage.writeWith(f, 0, len);
 	}
-		
-    @GetMapping("/resource")
-    public Mono<ResponseEntity<Resource>> get(ServerHttpRequest request, 
-    		@RequestParam(required = false) Optional<String> filecode) throws FileNotFoundException {
-    	
+
+	@GetMapping("/resource")
+	public Mono<ResponseEntity<Resource>> get(ServerHttpRequest request,
+			@RequestParam(required = false) Optional<String> filecode) throws FileNotFoundException {
+
 		if (filecode.isEmpty())
 			throw new FileNotFoundException("Please provide a valid filecode to download the file.");
-		
+
 		FileMeta fileMeta = fs.getLocalFiles().get(filecode.get());
-		
+
 		if (fileMeta == null)
 			throw new ResourceNotFoundException("The file you want to download is not available on server.");
 
 		Path p = fileMeta.getPath();
 
-		System.out.println("Client " + request.getRemoteAddress() + " is trying to download: " + filecode.get());
+		log.debug("Client " + request.getRemoteAddress() + " is trying to download: " + filecode.get());
 
 		if (p == null)
 			throw new FileNotFoundException("Please check directory and confirm the file exists.");
-		
+
 		FileSystemResource resource = new FileSystemResource(p);
-		
+
 		return Mono.just(ResponseEntity.ok()
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
-				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
-				.body(resource));
-    }
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).body(resource));
+	}
+
+	@PostMapping("/zip")
+	public Mono<ResponseEntity<Resource>> getZippedFile(@RequestBody List<String> files,
+			ServerHttpRequest request, ServerHttpResponse response) throws FileNotFoundException {
+
+		if (files.isEmpty()) {
+			log.debug("Empty filecode list for Zip file download of multiple files");
+			response.setRawStatusCode(204);
+			return Mono.empty();
+		}
+		
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+		ZipOutputStream zipOut = new ZipOutputStream(out);
+
+		LinkedHashMap<String, FileMeta> localFiles = fs.getLocalFiles();
+
+		try {
+
+			for (String filecode : files) {
+				FileMeta fm = localFiles.get(filecode);
+				if (fm != null) {
+					zipOut.putNextEntry(new ZipEntry(fm.getName()));
+					Files.copy(fm.getPath(), zipOut);
+				}
+			}
+			zipOut.finish();
+
+		} catch (Exception e) {
+			log.error(e);
+			response.setRawStatusCode(204);
+			return Mono.empty();
+		}
+
+		String filename = "custom_" + LocalDateTime.now() + ".zip";
+
+		log.debug("Client " + request.getRemoteAddress() + " is trying to download: " + filename);
+		
+		Resource data = new ByteArrayResource(out.toByteArray());
+
+		return Mono.just(
+				ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+						.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).body(data));
+	}
 	
 	// file upload endpoint - support both multiple and single file upload
 	@PostMapping("/upload")
 	public Mono<Void> uploadMultipleFiles(@RequestPart("file") Flux<FilePart> partFlux) {
-		System.out.println("MULTIPLE FILES ARE INFILTRATING FROM THE MAIN GATE");
-		return partFlux.doOnNext(fp -> System.out.println("Received File : " + fp.filename()))
+		log.debug("File upload request arrived");
+		return partFlux.doOnNext(fp -> log.debug("Received File : " + fp.filename()))
 				.flatMap(fp -> fp.transferTo(fs.getSyncDir().resolve(fp.filename()))).then();
 	}
-	
+
 }
