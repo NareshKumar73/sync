@@ -11,3 +11,20 @@
 	position: sticky;
 }
 
+.filecode {
+	text-align: center;
+}
+
+.hero {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+}
+
+.download-container {
+	margin: auto 0;
+}
+
+#download-selected {
+	visibility: hidden;
+}

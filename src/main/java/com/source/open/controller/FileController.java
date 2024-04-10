@@ -29,7 +29,6 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,6 +37,7 @@ import com.source.open.exception.ResourceNotFoundException;
 import com.source.open.payload.ApiMessage;
 import com.source.open.payload.FileListJson;
 import com.source.open.payload.FileMeta;
+import com.source.open.payload.FileRequest;
 import com.source.open.util.FileService;
 
 import lombok.RequiredArgsConstructor;
@@ -229,9 +229,13 @@ public class FileController {
 				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).body(resource));
 	}
 
-	@PostMapping("/zip")
-	public Mono<ResponseEntity<Resource>> getZippedFile(@RequestBody List<String> files,
+	@PostMapping(value = "/zip", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+	public Mono<ResponseEntity<Resource>> getZippedFile(FileRequest fileRequest,
 			ServerHttpRequest request, ServerHttpResponse response) throws FileNotFoundException {
+		
+		System.out.println(fileRequest);
+		
+		List<String> files = fileRequest.getFilecode();
 
 		if (files.isEmpty()) {
 			log.debug("Empty filecode list for Zip file download of multiple files");
@@ -271,6 +275,7 @@ public class FileController {
 		return Mono.just(
 				ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
 						.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).body(data));
+//		return Mono.just(ResponseEntity.ok().build());
 	}
 	
 	// file upload endpoint - support both multiple and single file upload

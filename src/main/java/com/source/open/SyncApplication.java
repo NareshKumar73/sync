@@ -49,6 +49,10 @@ public class SyncApplication implements CommandLineRunner {
 		
 		fs.refreshFileList();
 
+//		TODO Working now store these hashes in filename.txt to not generate hash again
+//		List<FileMeta> fileList = fs.refreshFileList();
+//		fileList.forEach(file -> System.out.println("Filename: " + file.getName() + "\nhash: " + fs.getHash(file.getPath())));
+
 //		nu.fetchLocalIpList();
 //		EXIT CODE 1 = NO IP FOUND VERY IMPORTANT
 		if (nu.getLocalIpList().isEmpty()) {
