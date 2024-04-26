@@ -112,7 +112,8 @@ public class SyncApplication implements CommandLineRunner {
 			files.forEach(file -> {
 //				try {
 //					nu.downloadFileSynchronously(baseUrl + file.getUrl(), file.getName());
-					nu.downloadFileReactively(baseUrl + file.getUrl(), file.getName());
+//				TODO NEW METHOD TO WRITE AS BELOW ALTERNATIVE
+//					nu.downloadFileReactively(baseUrl + file.getUrl(), file.getName());
 //				} catch (IOException e) {
 //					e.printStackTrace();
 //					System.err.println("Failed to download " + file.getName() + " from server " + baseUrl);

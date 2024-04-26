@@ -8,10 +8,6 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -24,15 +20,12 @@ import java.util.concurrent.Executors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.source.open.payload.FileListJson;
 
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.RetryBackoffSpec;
 
 @Log4j2
 @Service
@@ -40,7 +33,8 @@ public class NetworkUtil {
 
 	private final FileService fs;
 
-	private WebClient webClient;
+//	private WebClient webClient;
+	private RestClient client;
 
 //	THIS DEVICE IP LIST - IP & BOOLEAN INDICATING IF IT IS REACHABLE FROM LAN
 	private final ConcurrentHashMap<String, Boolean> localIpList = new ConcurrentHashMap<>();
@@ -79,7 +73,7 @@ public class NetworkUtil {
 
 		this.udpPort = udpPort;
 
-		this.webClient = WebClient.create();
+		client = RestClient.create();
 
 		this.broadcastIp = InetAddress.getByAddress(new byte[] { (byte) 255, (byte) 255, (byte) 255, (byte) 255 });
 
@@ -233,7 +227,7 @@ public class NetworkUtil {
 		//	NOW SEND ECHO SIGNAL AND WAIT FOR ACTIVE NODES
 		sendBroadcast();
 	}
-	
+
 	public List<FileListJson> fetchFileListFromEveryone() {
 		
 		List<FileListJson> list = new ArrayList<>();
@@ -242,7 +236,7 @@ public class NetworkUtil {
 			String host = entry.getKey();
 			Integer port = entry.getValue();
 			
-			list.add(fetchFileList("http://" + host + ":" + port + "/files/refresh"));
+			list.add(fetchFileList("http://" + host + ":" + port));
 		}
 		
 		return list;
@@ -260,36 +254,38 @@ public class NetworkUtil {
 //				.block();		
 //	}
 
+//	TODO NEW METHOD
 	public FileListJson fetchFileList(String url) {
-
-		return webClient.get().uri(url).accept(MediaType.APPLICATION_JSON).retrieve().bodyToMono(FileListJson.class)
-				.retryWhen(RetryBackoffSpec.backoff(3, Duration.ofSeconds(2))).doOnError(IOException.class, e -> {
-					log.error("Error retrieving file list after retries: {}", e.getMessage());
-				}).doOnError(JsonProcessingException.class, e -> {
-					log.error("Error parsing JSON response: {}", e.getMessage());
-				}).onErrorResume(e -> {
-					log.error("Unexpected error: {}", e.getMessage());
-					return Mono.error(new RuntimeException("Failed to fetch file list"));
-				}).onErrorReturn(new FileListJson()).block();
+		
+		return client.get().uri(url + "/files/refresh")
+				.accept(MediaType.APPLICATION_JSON)
+				.retrieve()
+				.body(FileListJson.class);
 	}
-
-	public Mono<Void> downloadFileReactively(String remoteFileUrl, String filename) {
-		System.out.println("Remote URL: " + remoteFileUrl + " Local Filename: " + filename);
-
-		Path dest = fs.getSyncDir().resolve(filename);
-
-		return webClient.get().uri(remoteFileUrl).retrieve().bodyToMono(byte[].class).flatMap(data -> {
-			try {
-				Files.write(dest, data, StandardOpenOption.CREATE_NEW);
-				return Mono.empty(); // Signal success
-			} catch (IOException e) {
-				return Mono.error(e); // Propagate any exceptions
-			}
-		})
-		.doOnNext(unused -> System.out.println(filename + " downloaded successfully."))
-		.doOnError(throwable -> System.err.println("Failed to download " + filename + ": " + throwable.getMessage()))
-		.then();
-	}
+	
+//	List<Article> articles = restClient.get()
+//			  .uri(uriBase + "/articles")
+//			  .retrieve()
+//			  .body(new ParameterizedTypeReference<>() {});
+	
+	
+//	public Mono<Void> downloadFileReactively(String remoteFileUrl, String filename) {
+//		System.out.println("Remote URL: " + remoteFileUrl + " Local Filename: " + filename);
+//
+//		Path dest = fs.getSyncDir().resolve(filename);
+//
+//		return webClient.get().uri(remoteFileUrl).retrieve().bodyToMono(byte[].class).flatMap(data -> {
+//			try {
+//				Files.write(dest, data, StandardOpenOption.CREATE_NEW);
+//				return Mono.empty(); // Signal success
+//			} catch (IOException e) {
+//				return Mono.error(e); // Propagate any exceptions
+//			}
+//		})
+//		.doOnNext(unused -> System.out.println(filename + " downloaded successfully."))
+//		.doOnError(throwable -> System.err.println("Failed to download " + filename + ": " + throwable.getMessage()))
+//		.then();
+//	}
 
 }
 
