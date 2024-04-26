@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.source.open</groupId>
 	<artifactId>Sync</artifactId>
-	<version>0.0.6</version>
+	<version>0.0.5</version>
 	<name>Sync</name>
 	<description>File Share Server</description>
 	<properties>
