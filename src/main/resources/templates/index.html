@@ -37,13 +37,13 @@
 				</thead>
 				<tbody>
 					<tr th:if="${local.totalElements == 0}">
-				        <td colspan="4"> No files available for download in folder sync-resource </td>
+				        <td colspan="4" class="text-center"> No files available for download in folder sync-resource </td>
 				    </tr>
 					<tr th:each="file : ${local.files}">
 						<td class="filecode"><input type="checkbox" th:field="*{filecode}" th:value="${file.code}"/></td>
 						<td class="fs-6 filename" th:text="${file.name}"></td>
 						<td class="fs-6 path" th:text="${file.relativePath}"></td>
-						<td class="text-center"><a th:href="${file.url}"><button class="btn btn-success">Download</button></a></td>
+						<td class="text-center"><a th:href="${file.url}"><button type="button" class="btn btn-success">Download</button></a></td>
 					</tr>
 				</tbody>
 			</table>

@@ -275,8 +275,53 @@ public class FileController {
 		return Mono.just(
 				ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
 						.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).body(data));
-//		return Mono.just(ResponseEntity.ok().build());
 	}
+	
+//	@PostMapping(value = "/zip-stream", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+//	public Mono<StreamingResponseBody> getZippedStream(FileRequest fileRequest,
+//			ServerHttpRequest request, ServerHttpResponse response) throws FileNotFoundException {
+//		
+//		System.out.println(fileRequest);
+//		
+//		List<String> files = fileRequest.getFilecode();
+//
+//		if (files.isEmpty()) {
+//			log.debug("Empty filecode list for Zip file download of multiple files");
+//			response.setRawStatusCode(204);
+////			return Mono.empty();
+//			return null;
+//		}
+//
+//		LinkedHashMap<String, FileMeta> localFiles = fs.getLocalFiles();
+//		
+//	    StreamingResponseBody stream = client -> {
+//
+//	    	ZipOutputStream zipOut = new ZipOutputStream(client);
+//
+//			try {
+//				for (String filecode : files) {
+//					FileMeta fm = localFiles.get(filecode);
+//					if (fm != null) {
+//						zipOut.putNextEntry(new ZipEntry(fm.getName()));
+//						Files.copy(fm.getPath(), zipOut);
+//					}
+//				}				
+//				zipOut.finish();
+//			} catch (Exception e) {
+//				log.error(e);
+//				response.setRawStatusCode(204);
+//			}
+//	    };
+//
+//		String filename = "custom_" + LocalDateTime.now() + ".zip";
+//		
+//		response.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + filename);
+//		response.getHeaders().set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
+//
+//		log.debug("Client " + request.getRemoteAddress() + " is trying to download: " + filename);
+//		
+//	    return Mono.just(stream);
+//	}
 	
 	// file upload endpoint - support both multiple and single file upload
 	@PostMapping("/upload")

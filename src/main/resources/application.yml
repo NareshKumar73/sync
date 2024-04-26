@@ -57,6 +57,17 @@ spring:
 #  jackson:
 #    serialization:
 #      WRITE_DATES_AS_TIMESTAMPS: false
+         
+logging: 
+  file:
+    name: sync.log
+    max-size: 1MB
+    max-history: 5
+  level: 
+#    '[com.zaxxer.hikari]': DEBUG
+    com: 
+      source: 
+        open: DEBUG
                 
 #logging: 
 ##  file:

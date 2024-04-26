@@ -35,5 +35,6 @@ build/
 ### THEIA ###
 .theia/
 
+### MY LIST
 sync-resource/
-MOVIES/
+sync.log**
