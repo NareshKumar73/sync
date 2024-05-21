@@ -47,6 +47,7 @@
 				// };
 
 				uploadzone.options.maxFilesize = null;
+				uploadzone.options.filesizeBase = 1024;
 
 				uploadzone.on("uploadprogress", (file, progress, bytesSent) => {
 					
