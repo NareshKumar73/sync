@@ -37,12 +37,6 @@ public class SyncApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws IOException {
 		
-		try {
-			Thread.sleep(Duration.ofSeconds(5));
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
 		System.out.println("WELCOME TO SYNC APP v0.1");
 
 		System.out.println("SYNC SERVICE WITHOUT DISCOVERY AND SYNC FEATURE.\nFILE SHARING SUPPORT ONLY.");
@@ -65,9 +59,9 @@ public class SyncApplication implements CommandLineRunner {
 			System.exit(1);
 		}
 		
-		nu.startListening();
+//		nu.startListening();
 
-		nu.refreshServerList();
+//		nu.refreshServerList();
 		
 //		sync();
 	}

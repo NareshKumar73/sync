@@ -28,3 +28,8 @@
 #download-selected {
 	visibility: hidden;
 }
+
+.big-check {
+	height: 20px;
+	width: 20px;
+}
