@@ -17,7 +17,6 @@ import com.source.open.payload.FileMeta;
 import com.source.open.util.FileService;
 import com.source.open.util.NetworkUtil;
 
-
 @SpringBootApplication
 public class SyncApplication implements CommandLineRunner {
 
@@ -36,11 +35,11 @@ public class SyncApplication implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws IOException {
-		
+
 		System.out.println("WELCOME TO SYNC APP v0.1");
 
 		System.out.println("SYNC SERVICE WITHOUT DISCOVERY AND SYNC FEATURE.\nFILE SHARING SUPPORT ONLY.");
-		
+
 		fs.refreshFileList();
 
 //		TODO Working now store these hashes in filename.txt to not generate hash again
@@ -51,19 +50,40 @@ public class SyncApplication implements CommandLineRunner {
 //		EXIT CODE 1 = NO IP FOUND VERY IMPORTANT
 		if (nu.getLocalIpList().isEmpty()) {
 			System.out.println("No IP found. Check your network card or wifi connection.");
-			
+
 			SpringApplication.exit(context, () -> {
 				return 1;
 			});
-			
+
 			System.exit(1);
 		}
-		
+
 //		nu.startListening();
 
 //		nu.refreshServerList();
-		
+
 //		sync();
+
+		// URL to open
+		String url = "http://localhost:9005/d";
+
+		// Command to open the URL in the default web browser
+		String os = System.getProperty("os.name").toLowerCase();
+		Runtime rt = Runtime.getRuntime();
+
+		try {
+			if (os.contains("win")) {
+				rt.exec(new String[] {"rundll32", "url.dll,FileProtocolHandler", url});
+			} else if (os.contains("mac")) {
+				rt.exec(new String[] {"open", url});
+			} else if (os.contains("nix") || os.contains("nux")) {
+				rt.exec(new String[] {"xdg-open", url});
+			} else {
+				System.err.println("Unsupported operating system.");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void sync() {
