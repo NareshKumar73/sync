@@ -6,12 +6,12 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.2.5</version>
+		<version>3.3.3</version>
 		<relativePath />
 	</parent>
 	<groupId>com.source.open</groupId>
 	<artifactId>Sync</artifactId>
-	<version>0.0.5</version>
+	<version>0.0.1-alpha</version>
 	<name>Sync</name>
 	<description>File Share Server</description>
 	<properties>

@@ -13,8 +13,8 @@ server:
 spring:
   application:
     name: sync
-  codec:
-    max-in-memory-size: 64MB
+#  codec:
+#    max-in-memory-size: 64MB
     
         
 #  autoconfigure:
