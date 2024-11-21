@@ -21,7 +21,7 @@ public class PageController {
 	
 	private final FileService fs;
 	
-	@GetMapping("/d")
+	@GetMapping({"/","/d"})
 	public String download(Model model) {
 		
 		List<FileMeta> list = fs.refreshFileList();

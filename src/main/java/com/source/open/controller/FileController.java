@@ -26,7 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.source.open.exception.ResourceNotFoundException;
-import com.source.open.payload.ApiMessage;
 import com.source.open.payload.FileListJson;
 import com.source.open.payload.FileMeta;
 import com.source.open.payload.FileRequest;
@@ -45,10 +44,10 @@ public class FileController {
 
 	private final FileService fs;
 
-	@GetMapping("/")
-	public ResponseEntity<ApiMessage> sync() {
-		return ResponseEntity.ok(new ApiMessage("SYNC SERVICE", true));
-	}
+//	@GetMapping("/")
+//	public ResponseEntity<ApiMessage> sync() {
+//		return ResponseEntity.ok(new ApiMessage("SYNC SERVICE", true));
+//	}
 
 	@GetMapping("/files")
 	public ResponseEntity<FileListJson> fileList() {

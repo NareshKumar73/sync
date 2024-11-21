@@ -10,12 +10,12 @@
 		<relativePath />
 	</parent>
 	<groupId>com.source.open</groupId>
-	<artifactId>Sync</artifactId>
+	<artifactId>sync</artifactId>
 	<version>0.0.1-alpha</version>
-	<name>Sync</name>
+	<name>sync</name>
 	<description>File Share Server</description>
 	<properties>
-		<java.version>21</java.version>
+		<java.version>17</java.version>
 	</properties>
 	<dependencies>
 		<dependency>
