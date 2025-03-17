@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -336,7 +337,8 @@ public class FileController {
 
 		for (MultipartFile file : parts) {
 			try {
-				file.transferTo(fs.getSyncDir().resolve(file.getOriginalFilename()));
+				Files.copy(file.getInputStream(), fs.getSyncDir().resolve(file.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
+//				file.transferTo(fs.getSyncDir().resolve(file.getOriginalFilename()));
 			} catch (IllegalStateException | IOException e) {
 				e.printStackTrace();
 			}

@@ -32,7 +32,8 @@
 					<tr class="h5">
 						<th>All <input id="select-all" type="checkbox" onclick="selectAllCheckBox()"/></th>
 						<th>Name</th>
-						<th>Path</th>
+						<th>Folder</th>
+						<th>Last Modified</th>
 						<th class="text-center">Link</th>
 					</tr>
 				</thead>
@@ -44,6 +45,7 @@
 						<td class="filecode"><input class="big-check" type="checkbox" th:field="*{filecode}" th:value="${file.code}"/></td>
 						<td class="fs-6 filename" th:text="${file.name}"></td>
 						<td class="fs-6 path" th:text="${file.relativePath}"></td>
+						<td class="fs-6 filename" th:text="${file.LastModified}"></td>						
 						<td class="text-center"><a th:href="${file.url}"><button type="button" class="btn btn-success">Download</button></a></td>
 					</tr>
 				</tbody>

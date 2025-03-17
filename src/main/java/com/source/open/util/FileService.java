@@ -48,7 +48,7 @@ public class FileService {
 
 		BASE_PATH = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
 
-		syncDir = createFolder(BASE_PATH.resolve("sync-resource"));
+		syncDir = createFolder(BASE_PATH.resolve("resource-for-sync-app"));
 
 		base64Encoder = Base64.getUrlEncoder().withoutPadding();
 
