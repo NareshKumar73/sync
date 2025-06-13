@@ -282,11 +282,11 @@ public class FileController {
 //	}
 
 	@PostMapping(value = "/zip-stream", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-	public ResponseEntity<StreamingResponseBody> getZippedStream(FileRequest fileRequest,
-			HttpServletRequest request, HttpServletResponse response) throws FileNotFoundException {
-		
+	public ResponseEntity<StreamingResponseBody> getZippedStream(FileRequest fileRequest, HttpServletRequest request,
+			HttpServletResponse response) throws FileNotFoundException {
+
 		System.out.println(fileRequest);
-		
+
 		List<String> files = fileRequest.getFilecode();
 
 		if (files.isEmpty()) {
@@ -296,10 +296,10 @@ public class FileController {
 		}
 
 		LinkedHashMap<String, FileMeta> localFiles = fs.getLocalFiles();
-		
-	    StreamingResponseBody stream = client -> {
 
-	    	ZipOutputStream zipOut = new ZipOutputStream(client);
+		StreamingResponseBody stream = client -> {
+
+			ZipOutputStream zipOut = new ZipOutputStream(client);
 
 			try {
 				for (String filecode : files) {
@@ -308,26 +308,26 @@ public class FileController {
 						zipOut.putNextEntry(new ZipEntry(fm.getName()));
 						Files.copy(fm.getPath(), zipOut);
 					}
-				}				
+				}
 				zipOut.finish();
 			} catch (Exception e) {
 				log.error(e);
 				response.setStatus(204);
 			}
-	    };
+		};
 
 		String filename = "custom_" + LocalDateTime.now() + ".zip";
-		
+
 		HttpHeaders headers = new HttpHeaders();
-		
+
 		headers.set(HttpHeaders.ACCEPT_RANGES, "none");
-		
+
 		headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + filename);
 		headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
 		log.debug("Client " + request.getRemoteAddr() + " is trying to download: " + filename);
-		
-	    return ResponseEntity.ok().headers(headers).body(stream);
+
+		return ResponseEntity.ok().headers(headers).body(stream);
 	}
 
 	// file upload endpoint - support both multiple and single file upload
@@ -337,8 +337,10 @@ public class FileController {
 
 		for (MultipartFile file : parts) {
 			try {
-				Files.copy(file.getInputStream(), fs.getSyncDir().resolve(file.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
-//				file.transferTo(fs.getSyncDir().resolve(file.getOriginalFilename()));
+//				Files.copy(file.getInputStream(), fs.getSyncDir().resolve(file.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
+				Path newFile = fs.getSyncDir().resolve(file.getOriginalFilename());
+				Files.deleteIfExists(newFile);
+				file.transferTo(newFile);
 			} catch (IllegalStateException | IOException e) {
 				e.printStackTrace();
 			}
