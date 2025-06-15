@@ -31,8 +31,6 @@ import lombok.extern.log4j.Log4j2;
 @Service
 public class NetworkUtil {
 
-	private final FileService fs;
-
 //	private WebClient webClient;
 	private RestClient client;
 
@@ -64,10 +62,8 @@ public class NetworkUtil {
 	 * 2. r:port r = reply to broadcast
 	 */
 
-	public NetworkUtil(FileService fs, @Value("${server.port}") Integer serverPort,
+	public NetworkUtil(@Value("${server.port}") Integer serverPort,
 			@Value("${server.port}") Integer udpPort) throws UnknownHostException, SocketException {
-
-		this.fs = fs;
 
 		this.serverPort = serverPort;
 

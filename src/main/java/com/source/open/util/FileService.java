@@ -1,21 +1,17 @@
 package com.source.open.util;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.DigestInputStream;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Comparator;
 import java.util.Base64.Encoder;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +34,8 @@ public class FileService {
 
 	private final Encoder base64Encoder;
 
+	private MessageDigest digest;
+
 //	FILE CODE - FILE META
 	private final LinkedHashMap<String, FileMeta> localFiles;
 
@@ -46,7 +44,7 @@ public class FileService {
 
 	public FileService() throws IOException {
 
-		BASE_PATH = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
+		BASE_PATH = Path.of(System.getProperty("user.dir")).toAbsolutePath();
 
 		syncDir = createFolder(BASE_PATH.resolve("resource-for-sync-app"));
 
@@ -80,7 +78,7 @@ public class FileService {
 			ci.next();
 		}
 		value *= Long.signum(bytes);
-		return String.format("%.1f %ciB", value / 1024.0, ci.current());
+		return "%.1f %ciB".formatted(value / 1024.0, ci.current());
 	}
 
 	public List<FileMeta> refreshFileList() {
@@ -96,9 +94,10 @@ public class FileService {
 
 						File f = path.toFile();
 
-						String urlSafeFilename = new String(base64Encoder.encode(f.getName().getBytes()));
+						String urlSafeFilename = new String(base64Encoder.encode(getHashLength8(f)));
 
-						String downloadLink = "/resource?filecode=" + urlSafeFilename;
+						String downloadLink = "/download?filecode=" + urlSafeFilename;
+//						String downloadLink = "/resource?filecode=" + urlSafeFilename;
 //				String downloadLink = "/part?filecode=" + urlSafeFilename;
 //				String downloadLink = "http://" + host + ":" + port + "/dl?filecode=" + urlSafeFilename;
 //				String downloadLink = "http://" + host + ":" + port + "/download?filecode=" + urlSafeFilename;
@@ -133,87 +132,53 @@ public class FileService {
 		return localFiles.values().stream().sorted(modifiedDate).toList();
 	}
 
-	public String getHash(Path p) {
+	public byte[] getHashLength8(File f) {
+		byte[] hashBytes = getHash(f);
+		byte[] shortHash = new byte[8]; // 8 bytes = 64 bits
+		
+		System.arraycopy(hashBytes, 0, shortHash, 0, shortHash.length);
 
-		String sha256Hash = "";
-
-		try {
-			MessageDigest digest = MessageDigest.getInstance("SHA3-256");
-
-			try (InputStream inputStream = new FileInputStream(p.toFile())) {
-				// Wrap the FileInputStream with DigestInputStream
-				DigestInputStream digestInputStream = new DigestInputStream(inputStream, digest);
-
-				// Read the file in chunks and update the digest
-				byte[] buffer = new byte[1048576]; // Adjust the buffer size as needed
-				while (digestInputStream.read(buffer) != -1) {
-					// Reading automatically updates the digest
-				}
-
-				// Get the computed hash value
-				byte[] hashBytes = digest.digest();
-
-				// Convert the hash bytes to a hexadecimal string
-				StringBuilder hexString = new StringBuilder();
-				for (byte hashByte : hashBytes) {
-					String hex = Integer.toHexString(0xff & hashByte);
-					if (hex.length() == 1) {
-						hexString.append('0');
-					}
-					hexString.append(hex);
-				}
-
-				sha256Hash = hexString.toString();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		}
-
-//		System.out.println("SHA-256 Hash of the file: " + sha256Hash);
-
-		return sha256Hash;
+		return shortHash;
 	}
 
-}
+	public byte[] getHash(File f) {
+		try {
+			if (this.digest == null)
+				this.digest = MessageDigest.getInstance("SHA3-256");
 
-////NEW CODE
-//private final Path tempDir;
+			return digest.digest(f.getName().getBytes(StandardCharsets.UTF_8));
+
+		} catch (Exception e) {
+			log.error(e);
+		}
+
+		return new byte[] {};
+	}
+
+//	public String getHash(File f) {
+//		try {
+//			if (this.digest == null)
+//				this.digest = MessageDigest.getInstance("SHA3-256");
 //
-//tempDir = syncDir.resolveSibling(".tmp");
+//			final byte[] hashbytes = digest.digest(f.getName().getBytes(StandardCharsets.UTF_8));
 //
-//public Mono<Void> mergeChunks(String filename) {
-//    Path mergedFile = syncDir.resolve(filename);
-//    try (OutputStream outputStream = Files.newOutputStream(mergedFile)) {
-//        int i = 0;
-//        while (true) {
-//            Path tempFile = tempDir.resolve(filename + ".part-" + i);
-//            if (!Files.exists(tempFile)) {
-//                break; // No more chunks to merge
-//            }
-//            Files.copy(tempFile, outputStream);
-//            Files.delete(tempFile); // Delete temporary chunk after merging
-//            i++;
-//        }
-//    } catch (IOException e) {
-//    	return Mono.error(e);
-//    }
-//    
-//    return Mono.empty(); // Signal successful merging
+//			return bytesToHex(hashbytes);
+//		} catch (Exception e) {
+//			log.error(e);
+//		}
+//		return "";
+//	}
+
+//	private String bytesToHex(byte[] hash) {
+//	StringBuilder hexString = new StringBuilder(2 * hash.length);
+//	for (int i = 0; i < hash.length; i++) {
+//		String hex = Integer.toHexString(0xff & hash[i]);
+//		if (hex.length() == 1) {
+//			hexString.append('0');
+//		}
+//		hexString.append(hex);
+//	}
+//	return hexString.toString();
 //}
-//
-//public Mono<Void> writeChunk(String filename, DataBuffer dataBuffer) {
-//    Path tempFile = tempDir.resolve(filename);
-//    return Mono.fromRunnable(() -> {
-//        try {
-//            byte[] bytes = new byte[dataBuffer.readableByteCount()]; // Allocate byte array based on DataBuffer size
-//            dataBuffer.read(bytes); // Read data from DataBuffer into byte array
-//            Files.write(tempFile, bytes, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-//        } catch (IOException e) {
-//            throw new RuntimeException("Error writing chunk: " + e.getMessage(), e);
-//        } finally {
-////            dataBuffer.release();
-//        }
-//    });
-//}
+
+}

@@ -3,14 +3,17 @@ package com.source.open.exception;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serial;
+
 @Getter
 @Setter
 public class ResourceNotFoundException extends RuntimeException {
 
-	/**
-	 * @author Naresh Kumar
-	 */
-	private static final long serialVersionUID = 1L;
+    /**
+     * @author Naresh Kumar
+     */
+    @Serial
+    private static final long serialVersionUID = 1L;
 
 	String resourceName;
 	String fieldName;
@@ -22,14 +25,14 @@ public class ResourceNotFoundException extends RuntimeException {
 	}
 
 	public ResourceNotFoundException(String resourceName, String fieldName, long fieldValue) {
-		super(String.format("%s not found with %s: %d", resourceName, fieldName, fieldValue));
+		super("%s not found with %s: %d".formatted(resourceName, fieldName, fieldValue));
 		this.resourceName = resourceName;
 		this.fieldName = fieldName;
 		this.fieldValue = fieldValue + "";
 	}
 
 	public ResourceNotFoundException(String resourceName, String fieldName, String fieldValue) {
-		super(String.format("%s not found with %s: %s", resourceName, fieldName, fieldValue));
+		super("%s not found with %s: %s".formatted(resourceName, fieldName, fieldValue));
 		this.resourceName = resourceName;
 		this.fieldName = fieldName;
 		this.fieldValue = fieldValue;

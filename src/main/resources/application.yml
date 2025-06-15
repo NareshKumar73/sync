@@ -61,13 +61,13 @@ spring:
 logging: 
   file:
     name: sync.log
-    max-size: 1MB
-    max-history: 5
-  level: 
-#    '[com.zaxxer.hikari]': DEBUG
+  level:
+    #    '[com.zaxxer.hikari]': DEBUG
     com: 
       source: 
-        open: DEBUG
+        open: DEBUG 
+  logback.rollingpolicy.max-history: 5 
+  logback.rollingpolicy.max-file-size: 1MB
                 
 #logging: 
 ##  file:
