@@ -44,7 +44,7 @@ public class FileService {
 
 	public FileService() throws IOException {
 
-		BASE_PATH = Path.of(System.getProperty("user.dir")).toAbsolutePath();
+		BASE_PATH = Path.of(System.getProperty("user.home") + File.separator + "Downloads").toAbsolutePath();
 
 		syncDir = createFolder(BASE_PATH.resolve("resource-for-sync-app"));
 
@@ -135,7 +135,7 @@ public class FileService {
 	public byte[] getHashLength8(File f) {
 		byte[] hashBytes = getHash(f);
 		byte[] shortHash = new byte[8]; // 8 bytes = 64 bits
-		
+
 		System.arraycopy(hashBytes, 0, shortHash, 0, shortHash.length);
 
 		return shortHash;

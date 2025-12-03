@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
+
 <head>
 	<title>SYNC - KING</title>
 
@@ -16,49 +17,54 @@
 </head>
 
 <body>
-	<form id="download-form" action="#" method="post" th:action="@{/zip-stream}" th:object="${form}">			
-	<div class="container hero">
-		<h1 class="text-dark">Download or goto ⇒ <a href="/u">Upload</a></h1>
-		<div class="download-container">			
-			<button id="download-selected" class="btn btn-primary" type="submit">Download Selected</button>
-			<!-- 			onclick="sendDownloadList()"			-->
+	<form id="download-form" action="#" method="post" th:action="@{/zip-stream}" th:object="${form}">
+		<div class="container hero">
+			<h1 class="text-dark">Download or goto ⇒ <a href="/u">Upload</a></h1>
+			<div class="download-container">
+				<button id="download-selected" class="btn btn-primary" type="submit">Download Selected</button>
+				<!-- 			onclick="sendDownloadList()"			-->
+			</div>
 		</div>
-	</div>
-	<div class="container">
-<!-- 	 th:if="${local.totalElements != 0}" -->
-		<div class="tabular">
-			<table class="table table-striped table-bordered border-dark">
-				<thead class="table-dark stick">
-					<tr class="h5">
-						<th>All <input id="select-all" type="checkbox" onclick="selectAllCheckBox()"/></th>
-						<th>Name</th>
-						<th>Folder</th>
-						<th>Last Modified</th>
-						<th class="text-center">Link</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr th:if="${local.totalElements == 0}">
-				        <td colspan="4" class="text-center"> No files available for download in folder sync-resource </td>
-				    </tr>
-					<tr th:each="file : ${local.files}">
-						<td class="filecode"><input class="big-check" type="checkbox" th:field="*{filecode}" th:value="${file.code}"/></td>
-						<td class="fs-6 filename" th:text="${file.name}"></td>
-						<td class="fs-6 path" th:text="${file.relativePath}"></td>
-						<td class="fs-6 filename" th:text="${file.LastModified}"></td>						
-						<td class="text-center"><a th:href="${file.url}"><button type="button" class="btn btn-success">Download</button></a></td>
-					</tr>
-				</tbody>
-			</table>
+		<div class="container">
+			<!-- 	 th:if="${local.totalElements != 0}" -->
+			<div class="tabular">
+				<table class="table table-striped table-bordered border-dark">
+					<thead class="table-dark stick">
+						<tr class="h5">
+							<th>All <input id="select-all" type="checkbox" onclick="selectAllCheckBox()" /></th>
+							<th>Name</th>
+							<th>Size</th>
+							<th>Last Modified</th>
+							<th>Folder</th>
+							<th class="text-center">Link</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr th:if="${local.totalElements == 0}">
+							<td colspan="4" class="text-center"> No files available for download in folder sync-resource
+							</td>
+						</tr>
+						<tr th:each="file : ${local.files}">
+							<td class="filecode"><input class="big-check" type="checkbox" th:field="*{filecode}"
+									th:value="${file.code}" /></td>
+							<td class="fs-6 filename" th:text="${file.name}"></td>
+							<td class="fs-6 filename" th:text="${file.size}"></td>
+							<td class="fs-6 filename" th:text="${file.lastModified}"></td>
+							<td class="fs-6 path" th:text="${file.relativePath}"></td>
+							<td class="text-center"><a th:href="${file.url}"><button type="button"
+										class="btn btn-success">Download</button></a></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
 		</div>
-		</div>
-		</form>
-<!--		<form id="download-form" action="#" method="post" th:action="@{/zip}" th:object="${form}">
+	</form>
+	<!--		<form id="download-form" action="#" method="post" th:action="@{/zip}" th:object="${form}">
 		        <input type="hidden" id="file-array" name="files">
 		</form>
 -->
-		<script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
-		<script src="../static/js/code.js" th:src="@{/js/code.js}"></script>
+	<script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
+	<script src="../static/js/code.js" th:src="@{/js/code.js}"></script>
 </body>
 
 </html>

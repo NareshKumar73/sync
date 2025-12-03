@@ -63,26 +63,26 @@ public class SyncApplication implements CommandLineRunner {
 
 //		sync();
 
-		// URL to open
-		String url = "http://localhost:9005/d";
-
-		// Command to open the URL in the default web browser
-		String os = System.getProperty("os.name").toLowerCase();
-		Runtime rt = Runtime.getRuntime();
-
-		try {
-			if (os.contains("win")) {
-				rt.exec(new String[] {"rundll32", "url.dll,FileProtocolHandler", url});
-			} else if (os.contains("mac")) {
-				rt.exec(new String[] {"open", url});
-			} else if (os.contains("nix") || os.contains("nux")) {
-				rt.exec(new String[] {"xdg-open", url});
-			} else {
-				System.err.println("Unsupported operating system.");
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+//		// URL to open
+//		String url = "http://localhost:9005/d";
+//
+//		// Command to open the URL in the default web browser
+//		String os = System.getProperty("os.name").toLowerCase();
+//		Runtime rt = Runtime.getRuntime();
+//
+//		try {
+//			if (os.contains("win")) {
+//				rt.exec(new String[] {"rundll32", "url.dll,FileProtocolHandler", url});
+//			} else if (os.contains("mac")) {
+//				rt.exec(new String[] {"open", url});
+//			} else if (os.contains("nix") || os.contains("nux")) {
+//				rt.exec(new String[] {"xdg-open", url});
+//			} else {
+//				System.err.println("Unsupported operating system.");
+//			}
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 	}
 
 	public void sync() {

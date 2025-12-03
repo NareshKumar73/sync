@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class FileListJson {
 
 	private List<FileMeta> files;
+
 	private int totalElements;
-	
+
 }
