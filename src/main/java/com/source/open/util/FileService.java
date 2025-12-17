@@ -16,6 +16,8 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.stereotype.Service;
 
 import com.source.open.payload.FileMeta;
@@ -44,7 +46,7 @@ public class FileService {
 
 	public FileService() throws IOException {
 
-		BASE_PATH = Path.of(System.getProperty("user.home") + File.separator + "Downloads").toAbsolutePath();
+		BASE_PATH = Path.of(System.getProperty("user.dir")).toAbsolutePath();
 
 		syncDir = createFolder(BASE_PATH.resolve("resource-for-sync-app"));
 
@@ -90,7 +92,7 @@ public class FileService {
 		try {
 			Files.walk(syncDir) // NOW SUPPORT SUB DIRECTORY ACCESS
 //			.list(syncDir)	OLD METHOD FOR SINGLE DIRECTORY ACCESS
-					.filter(p -> Files.isRegularFile(p)).forEach(path -> {
+					.filter(Files::isRegularFile).forEach(path -> {
 
 						File f = path.toFile();
 
@@ -98,13 +100,19 @@ public class FileService {
 
 						String downloadLink = "/download?filecode=" + urlSafeFilename;
 //						String downloadLink = "/resource?filecode=" + urlSafeFilename;
-//				String downloadLink = "/part?filecode=" + urlSafeFilename;
-//				String downloadLink = "http://" + host + ":" + port + "/dl?filecode=" + urlSafeFilename;
-//				String downloadLink = "http://" + host + ":" + port + "/download?filecode=" + urlSafeFilename;
+//						String downloadLink = "/part?filecode=" + urlSafeFilename;
+						
+						MediaType mime = MediaTypeFactory
+						        .getMediaType(f.getName())
+						        .orElse(MediaType.APPLICATION_OCTET_STREAM);
+						
+//						if (MediaType.APPLICATION_OCTET_STREAM.equals(mime)) {
+//							
+//						}
 
 						FileMeta fm = new FileMeta(downloadLink, urlSafeFilename, f.getName(),
 								syncDir.relativize(path.getParent()).toString(), friendlyFileSize(f.length()),
-								new Date(f.lastModified()).toString(), f.length(), f.lastModified(), path);
+								new Date(f.lastModified()).toString(), f.length(), f.lastModified(), mime, path);
 
 						localFiles.put(urlSafeFilename, fm);
 						files.add(fm);

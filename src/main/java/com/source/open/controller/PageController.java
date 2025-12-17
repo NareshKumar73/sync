@@ -1,6 +1,7 @@
 package com.source.open.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,6 +12,7 @@ import com.source.open.payload.FileListJson;
 import com.source.open.payload.FileMeta;
 import com.source.open.payload.FileRequest;
 import com.source.open.util.FileService;
+import com.source.open.util.NetworkUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,26 +20,32 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Controller
 public class PageController {
-	
+
 	private final FileService fs;
-	
-	@GetMapping({"/","/d"})
+
+	private final NetworkUtil nu;
+
+	@GetMapping({ "/", "/d" })
 	public String download(Model model) {
-		
+
 		List<FileMeta> list = fs.refreshFileList();
-		
+
 		FileListJson json = new FileListJson(list, list.size());
-		
+
+		Map<String, String> ipMap = nu.getSystemIpMap();
+
+		System.out.println(ipMap);
+
 		model.addAttribute("local", json);
 		model.addAttribute("form", new FileRequest());
-		
+		model.addAttribute("ips", ipMap);
+
 		return "index";
 	}
-	
+
 	@GetMapping("/u")
 	public String upload() {
 		return "upload";
 	}
-
 
 }

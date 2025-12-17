@@ -2,132 +2,85 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 
 <head>
-	<title>SYNC - KING</title>
-
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<meta name="description" content="File sharing platform within a LAN Network">
-	<meta name="author" content="Naresh Kumar">
-
-	<link rel="stylesheet" type="text/css" media="all" href="../static/bootstrap/bootstrap.css"
-		th:href="@{/bootstrap/bootstrap.css}">
-
-	<link rel="stylesheet" type="text/css" media="all" href="../static/dropzone/dropzone.css"
-		th:href="@{/dropzone/dropzone.css}">
+    <title>SYNC - KING | Upload</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../static/bootstrap/bootstrap.css" th:href="@{/bootstrap/bootstrap.css}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../static/dropzone/dropzone.css" th:href="@{/dropzone/dropzone.css}">
+    <link rel="stylesheet" href="../static/css/design.css" th:href="@{/css/design.css}">
 </head>
 
 <body>
-	<div class="container mt-4 d-flex justify-content-center">
-	<h1 class="text-dark">Upload or goto ⇒ <a href="/d">Download</a></h1>
-	</div>
-	<div class="container mt-3">
-		<form action="/upload" th:action="@{/upload}" class="dropzone" id="air-drop">
-		</form>
-	</div>
-	<script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
-	<script src="../static/dropzone/dropzone.js" th:src="@{/dropzone/dropzone.js}"></script>
-	<script>
-		let uploadzone;
 
-		let setup = () => {
+    <nav class="navbar-custom mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="text-decoration-none fw-bold text-dark fs-5" th:href="@{/}">
+                <i class="bi bi-arrow-left-short"></i> Back to Files
+            </a>
+            <span class="badge bg-primary rounded-pill">Upload Mode</span>
+        </div>
+    </nav>
 
-			uploadzone = Dropzone.instances[0];
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold">Upload Files</h2>
+                    <p class="text-muted">Drag and drop files to share them on the network.</p>
+                </div>
 
-			if (uploadzone === undefined)
-				setTimeout(setup, 1000);
-			else {
-
-				// Dropzone.options.airDrop = {
-				// 	init: function () {
-				// 		this.on("uploadProgress", (e) => {
-				// 			console.log(e.file + "\n" + e.progress + "\n" + e.bytesSent);
-				// 		});
-				// 	}
-				// };
-
-				uploadzone.options.maxFilesize = null;
-				uploadzone.options.filesizeBase = 1024;
-
-				uploadzone.on("uploadprogress", (file, progress, bytesSent) => {
-					
-					if (file.previewElement) {
-						for (let node of file.previewElement.querySelectorAll("[data-dz-uploadprogress]")) {
-								console.log("PROGRESS " + (progress | 0));
-								node.innerHTML = `${progress | 0}%`;
-						}
-					}
-				});
-
-				// document.getElementsByClassName("dz-upload")[0].innerText = "100%"
-
-				// uploadzone.on("complete", function (file) {
-				// uploadzone.removeFile(file);
-				// });
-			}
-		}
-
-		setup();
-	</script>
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-0">
+                        <form action="/upload" th:action="@{/upload}" class="dropzone" id="air-drop">
+                            <div class="dz-message needsclick">
+                                <i class="bi bi-cloud-arrow-up-fill dz-icon-large"></i>
+                                <h4 class="mt-2">Drop files here or click to upload</h4>
+                                <span class="text-muted small">Supports all file types • Unlimited size</span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
+    <script src="../static/dropzone/dropzone.js" th:src="@{/dropzone/dropzone.js}"></script>
+    <script>
+        Dropzone.autoDiscover = false;
+        let uploadzone = new Dropzone("#air-drop", {
+            maxFilesize: null,
+            filesizeBase: 1024,
+            createImageThumbnails: false, // Disabling thumbs speeds up large file adding
+            init: function () {
+                this.on("uploadprogress", (file, progress) => {
+                    if (file.previewElement) {
+                        file.previewElement.querySelector("[data-dz-uploadprogress]").style.width = progress + "%";
+                    }
+                });
+            }
+        });
+        // Dropzone.autoDiscover = false;
+        // let uploadzone = new Dropzone("#air-drop", {
+        // 	maxFilesize: null,
+        // 	filesizeBase: 1024,
+        // 	dictDefaultMessage: "",
+        // 	init: function () {
+        // 		this.on("uploadprogress", (file, progress, bytesSent) => {
+        // 			if (file.previewElement) {
+        // 				let progressElement = file.previewElement.querySelector("[data-dz-uploadprogress]");
+        // 				if (progressElement) {
+        // 					progressElement.style.width = progress + "%";
+        // 					progressElement.innerHTML = Math.floor(progress) + "%";
+        // 				}
+        // 			}
+        // 		});
+        // 		this.on("success", (file, response) => {
+        // 			file.previewElement.classList.add("dz-success");
+        // 		});
+        // 	}
+        // });
+    </script>
 </body>
 
 </html>
-
-<!--				document.getElementById("send").addEventListener('click', (event) => {
-					event.preventDefault();
-					console.log("click")
-					uploadzone.processQueue();
-				});
--->
-<!-- // Dropzone.options.warzone = {
-
-	// 	url: "/upload",
-	// 	method: "post",
-	// 	parallelUploads: 3,
-	// 	uploadMultiple: true,
-	// } -->
-
-
-<!-- <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
-		<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />		 -->
-<!-- <script src="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone-min.js"></script>
-	<link href="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone.css" rel="stylesheet" type="text/css" /> -->
-<!-- <script th:src="@{/bootstrap/bootstrap.bundle.js}"></script> -->
-
-<!-- <script>
-		let myDropzone = new Dropzone("#my-awesome-dropzone", { url: "/upload"});
-    </script> -->
-<!--	<script src="../static/dropzone/dropzone.js" th:href="@{/dropzone/dropzone.js}"></script>
--->
-
-<!-- // 	// url: null (set your upload endpoint here)
-// 	// method: "post" (default HTTP method)
-// 	// withCredentials: false (default behavior for XHR)
-// 	// timeout: null (no timeout by default)
-// 	// parallelUploads: 2 (allow multiple simultaneous uploads)
-// 	// uploadMultiple: false (doesn't send files in one request)
-// 	// chunking: false (disable file chunking)
-// 	// forceChunking: false (don't force chunking for any files)
-// 	// chunkSize: 2000000 (2MB chunk size for chunking)
-// 	// parallelChunkUploads: false (don't upload chunks in parallel)
-// 	// acceptedFiles: null (accept all file types)
-// 	// maxFiles: null (no limit on files)
-// 	// maxFileSize: null (no limit on file size)
-// 	// minFileSize: 0 (allow files of any size)
-// 	// autoProcessQueue: true (automatically upload files)
-// 	// addRemoveLinks: true (display remove links for files)
-// 	// renameFilename: null (don't rename files)
-// 	// previewTemplate: default preview template
-// 	// previewContainer: null (use default container)
-// 	// clickable: true (allow clicking on preview elements)
-// 	// createImageThumbnails: true (generate image thumbnails)
-// 	// maxThumbnailFilesize: 1000000 (1MB limit for thumbnail size)
-// 	// resizeWidth: null (don't resize images)
-// 	// resizeHeight: null (don't resize images)
-// 	// resizeMimeType: null (no specific mime type for resizing)
-// 	// autoQueueTimeout: null (no timeout for adding files)
-// 	// fallback: true (use fallback file input if browser doesn't support drag-and-drop)
-// 	// fallbackDirectory: '' (empty fallback directory)
-// 	// fallbackParamName: 'file' (name of the file parameter in the fallback form)
-// 	dictDefaultMessage: "Drag & drop files here or click to browse",
-// 	// ...other dictionary options for various messages -->

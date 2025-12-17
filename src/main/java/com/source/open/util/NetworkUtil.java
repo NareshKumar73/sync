@@ -3,6 +3,7 @@ package com.source.open.util;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -11,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,13 +59,12 @@ public class NetworkUtil {
 	private ExecutorService udpClientExecutor;
 
 	/*
-	 * Their are two type of udp message 
-	 * 1. b:port b = broadcast 
-	 * 2. r:port r = reply to broadcast
+	 * Their are two type of udp message 1. b:port b = broadcast 2. r:port r = reply
+	 * to broadcast
 	 */
 
-	public NetworkUtil(@Value("${server.port}") Integer serverPort,
-			@Value("${server.port}") Integer udpPort) throws UnknownHostException, SocketException {
+	public NetworkUtil(@Value("${server.port}") Integer serverPort, @Value("${server.port}") Integer udpPort)
+			throws UnknownHostException, SocketException {
 
 		this.serverPort = serverPort;
 
@@ -96,7 +97,7 @@ public class NetworkUtil {
 		Runnable server = () -> {
 
 			log.info("Starting sync app discovery service over lan");
-			
+
 			while (!Thread.interrupted()) {
 				try {
 					DatagramPacket buf = new DatagramPacket(new byte[7], 7);
@@ -114,7 +115,7 @@ public class NetworkUtil {
 					if (message[0].equals("b")) {
 
 //						IF IT WAS ME THE VALIDATE ONE IP
-						if (localIpList.containsKey(host)) 
+						if (localIpList.containsKey(host))
 							localIpList.put(host, true);
 //						IF IT WAS ANOTHER NODE BROADCAST THEN SEND ATTENDENCE
 						else
@@ -123,7 +124,7 @@ public class NetworkUtil {
 //					IF IT WAS A REPLY MESSAGE THE PUT THIS HOST TO ACTIVE CLIENTS
 					else
 						activeNodes.put(host, Integer.parseInt(port));
-					
+
 					System.out.println("Greetings from: " + host + ":" + port);
 
 				} catch (IOException e) {
@@ -173,11 +174,11 @@ public class NetworkUtil {
 		System.out.println("Sending reply");
 		udpClientExecutor.execute(echo);
 	}
-	
+
 	public Map<String, Boolean> getLocalIpList() {
 		if (localIpList.isEmpty()) {
 			return fetchLocalIpList();
-		}		
+		}
 		return localIpList;
 	}
 
@@ -216,25 +217,61 @@ public class NetworkUtil {
 		return map;
 	}
 
+	public Map<String, String> getSystemIpMap() {
+
+		Map<String, String> ipMap = new LinkedHashMap<>();
+
+		try {
+			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+
+			while (interfaces.hasMoreElements()) {
+				NetworkInterface ni = interfaces.nextElement();
+
+				// Skip down or loopback interfaces
+				if (!ni.isUp() || ni.isLoopback()) {
+					continue;
+				}
+
+				Enumeration<InetAddress> addresses = ni.getInetAddresses();
+
+				while (addresses.hasMoreElements()) {
+					InetAddress addr = addresses.nextElement();
+
+					// Skip IPv6 if you don't want them
+					if (addr instanceof Inet6Address) {
+						continue;
+					}
+
+					ipMap.put(ni.getDisplayName(), addr.getHostAddress());
+				}
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return ipMap;
+	}
+
 	public void refreshServerList() {
-		//	REMOVE PREVIOUS SERVER 
+		// REMOVE PREVIOUS SERVER
 		activeNodes.clear();
 
-		//	NOW SEND ECHO SIGNAL AND WAIT FOR ACTIVE NODES
+		// NOW SEND ECHO SIGNAL AND WAIT FOR ACTIVE NODES
 		sendBroadcast();
 	}
 
 	public List<FileListJson> fetchFileListFromEveryone() {
-		
+
 		List<FileListJson> list = new ArrayList<>();
 
 		for (Map.Entry<String, Integer> entry : activeNodes.entrySet()) {
 			String host = entry.getKey();
 			Integer port = entry.getValue();
-			
+
 			list.add(fetchFileList("http://" + host + ":" + port));
 		}
-		
+
 		return list;
 	}
 
@@ -252,19 +289,16 @@ public class NetworkUtil {
 
 //	TODO NEW METHOD
 	public FileListJson fetchFileList(String url) {
-		
-		return client.get().uri(url + "/files/refresh")
-				.accept(MediaType.APPLICATION_JSON)
-				.retrieve()
+
+		return client.get().uri(url + "/files/refresh").accept(MediaType.APPLICATION_JSON).retrieve()
 				.body(FileListJson.class);
 	}
-	
+
 //	List<Article> articles = restClient.get()
 //			  .uri(uriBase + "/articles")
 //			  .retrieve()
 //			  .body(new ParameterizedTypeReference<>() {});
-	
-	
+
 //	public Mono<Void> downloadFileReactively(String remoteFileUrl, String filename) {
 //		System.out.println("Remote URL: " + remoteFileUrl + " Local Filename: " + filename);
 //

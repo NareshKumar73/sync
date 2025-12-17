@@ -2,6 +2,8 @@ package com.source.open.payload;
 
 import java.nio.file.Path;
 
+import org.springframework.http.MediaType;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.AllArgsConstructor;
@@ -23,6 +25,8 @@ public class FileMeta {
 	private long sizeInBytes;
 
 	private long lastModifiedEpoch;
+
+	private MediaType fileType;
 
 	@JsonIgnore
 	private Path path;

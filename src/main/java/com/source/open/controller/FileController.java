@@ -277,14 +277,4 @@ public class FileController {
 		}
 	}
 
-//	private void copyRange(InputStream in, OutputStream out, long len) throws IOException {
-//		byte[] buffer = new byte[8192];
-//		long remaining = len;
-//		int read;
-//		while (remaining > 0 && (read = in.read(buffer, 0, (int) Math.min(buffer.length, remaining))) != -1) {
-//			out.write(buffer, 0, read);
-//			remaining -= read;
-//		}
-//	}
-
 }
