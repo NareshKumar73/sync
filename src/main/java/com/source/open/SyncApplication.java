@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -16,17 +15,17 @@ import com.source.open.payload.FileMeta;
 import com.source.open.util.FileService;
 import com.source.open.util.NetworkUtil;
 
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
 @SpringBootApplication
 public class SyncApplication implements CommandLineRunner {
 
-	@Autowired
-	private FileService fs;
+	private final FileService fs;
 
-	@Autowired
-	private NetworkUtil nu;
+	private final NetworkUtil nu;
 
-	@Autowired
-	private ApplicationContext context;
+	private final ApplicationContext context;
 
 	public static void main(String[] args) {
 		SpringApplication.run(SyncApplication.class, args);
@@ -35,15 +34,11 @@ public class SyncApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws IOException {
 
-		System.out.println("WELCOME TO SYNC APP v0.1");
+		System.out.println("WELCOME TO SYNC APP v0.4");
 
 		System.out.println("SYNC SERVICE WITHOUT DISCOVERY AND SYNC FEATURE.\nFILE SHARING SUPPORT ONLY.");
 
 		fs.refreshFileList();
-
-//		TODO Working now store these hashes in filename.txt to not generate hash again
-//		List<FileMeta> fileList = fs.refreshFileList();
-//		fileList.forEach(file -> System.out.println("Filename: " + file.getName() + "\nhash: " + fs.getHash(file.getPath())));
 
 //		nu.fetchLocalIpList();
 //		EXIT CODE 1 = NO IP FOUND VERY IMPORTANT
@@ -105,12 +100,13 @@ public class SyncApplication implements CommandLineRunner {
 //			downloadableFiles.put(url, new ArrayList<>());
 //		});
 //
-////		FILECODE - FILE LIST TODO IN FUTURE RELEASE WILL HAVE OPTION TO REPLACE EXISTING FILES WITH OTHER SERVER FILE 
+		//// FILECODE - FILE LIST TODO IN FUTURE RELEASE WILL HAVE OPTION TO REPLACE
+		/// EXISTING FILES WITH OTHER SERVER FILE
 //
 //		nu.getSyncServers().forEach(url -> {
 //			nu.fetchFileList(url).getFiles().forEach(file -> {
 //
-////				IF FILE IS NOT AVAILABLE LOCALLY THEN ADD TO DOWNLOAD LIST
+		//// IF FILE IS NOT AVAILABLE LOCALLY THEN ADD TO DOWNLOAD LIST
 //				if (!localFiles.containsKey(file.getCode())) {
 //
 //					downloadableFiles.get(url).add(file);
@@ -121,18 +117,18 @@ public class SyncApplication implements CommandLineRunner {
 		System.out.println("FILES :\n" + downloadableFiles);
 
 //		DOWNLOAD ALL FILES IN DOWNLOAD LIST
-		downloadableFiles.forEach((baseUrl, files) -> {
-			files.forEach(file -> {
+//		downloadableFiles.forEach((baseUrl, files) -> {
+//			files.forEach(file -> {
 //				try {
 //					nu.downloadFileSynchronously(baseUrl + file.getUrl(), file.getName());
-//				TODO NEW METHOD TO WRITE AS BELOW ALTERNATIVE
+//				NEW METHOD TO WRITE AS BELOW ALTERNATIVE
 //					nu.downloadFileReactively(baseUrl + file.getUrl(), file.getName());
 //				} catch (IOException e) {
 //					e.printStackTrace();
 //					System.err.println("Failed to download " + file.getName() + " from server " + baseUrl);
 //				}
-			});
-		});
+//			});
+//		});
 
 //		DONE
 		System.out.println("FINISH");
@@ -155,7 +151,7 @@ public class SyncApplication implements CommandLineRunner {
 
 //Map<String, List<FileMeta>> duplicateFiles = new HashMap<>();
 
-////A modified file is found on other server which is available on our system.
+//// A modified file is found on other server which is available on our system.
 //else if(localFiles.get(file.getCode()).getSizeInBytes() != file.getSizeInBytes()) {
 //duplicateFiles.get(file.getCode()).add(file);
 //}
@@ -180,9 +176,10 @@ public class SyncApplication implements CommandLineRunner {
 
 //downloadableFiles.forEach((fileCode, files) -> {
 //
-////	TODO IF MORE THAN ONE FILE AVAILABLE FOR A FILECODE THEN FOR NOW DOWNLOAD FIRST FILE IN THE LIST
+//// TODO IF MORE THAN ONE FILE AVAILABLE FOR A FILECODE THEN FOR NOW DOWNLOAD
+/// FIRST FILE IN THE LIST
 //
-////	API CALL WAS NOT WAITING FOR COMPLETION - NOW USING BLOCING CODE INSTEAD
+//// API CALL WAS NOT WAITING FOR COMPLETION - NOW USING BLOCING CODE INSTEAD
 //	FileMeta meta = files.get(0);
 //
 //	try {

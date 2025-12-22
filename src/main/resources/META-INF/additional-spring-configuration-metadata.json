@@ -1,0 +1,9 @@
+{
+	"properties": [
+		{
+			"name": "upd.port",
+			"type": "java.lang.String",
+			"description": "The udp port to use to search"
+		}
+	]
+}

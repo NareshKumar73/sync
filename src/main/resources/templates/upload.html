@@ -2,85 +2,71 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 
 <head>
-    <title>SYNC - KING | Upload</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="../static/bootstrap/bootstrap.css" th:href="@{/bootstrap/bootstrap.css}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="../static/dropzone/dropzone.css" th:href="@{/dropzone/dropzone.css}">
-    <link rel="stylesheet" href="../static/css/design.css" th:href="@{/css/design.css}">
+	<title>SYNC - KING | Upload</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="../static/bootstrap/bootstrap.css" th:href="@{/bootstrap/bootstrap.css}">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+	<link rel="stylesheet" href="../static/dropzone/dropzone.css" th:href="@{/dropzone/dropzone.css}">
+	<link rel="stylesheet" href="../static/css/design.css" th:href="@{/css/design.css}">
 </head>
 
 <body>
 
-    <nav class="navbar-custom mb-4">
-        <div class="container d-flex justify-content-between align-items-center">
-            <a class="text-decoration-none fw-bold text-dark fs-5" th:href="@{/}">
-                <i class="bi bi-arrow-left-short"></i> Back to Files
-            </a>
-            <span class="badge bg-primary rounded-pill">Upload Mode</span>
-        </div>
-    </nav>
+	<nav class="navbar-custom mb-4">
+		<div class="container d-flex justify-content-between align-items-center">
+			<a class="text-decoration-none fw-bold text-dark fs-5" th:href="@{/}">
+				<i class="bi bi-arrow-left-short"></i> Back to Files
+			</a>
+			<span class="badge bg-primary rounded-pill">Upload Mode</span>
+		</div>
+	</nav>
 
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="text-center mb-4">
-                    <h2 class="fw-bold">Upload Files</h2>
-                    <p class="text-muted">Drag and drop files to share them on the network.</p>
-                </div>
+	<div class="container">
+		<div class="row justify-content-center">
+			<div class="col-lg-8">
+				<div class="text-center mb-4">
+					<h2 class="fw-bold">Upload Files</h2>
+					<p class="text-muted">Drag and drop files to share them on the network.</p>
+				</div>
 
-                <div class="card shadow-sm border-0">
-                    <div class="card-body p-0">
-                        <form action="/upload" th:action="@{/upload}" class="dropzone" id="air-drop">
-                            <div class="dz-message needsclick">
-                                <i class="bi bi-cloud-arrow-up-fill dz-icon-large"></i>
-                                <h4 class="mt-2">Drop files here or click to upload</h4>
-                                <span class="text-muted small">Supports all file types • Unlimited size</span>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
-    <script src="../static/dropzone/dropzone.js" th:src="@{/dropzone/dropzone.js}"></script>
-    <script>
-        Dropzone.autoDiscover = false;
-        let uploadzone = new Dropzone("#air-drop", {
-            maxFilesize: null,
-            filesizeBase: 1024,
-            createImageThumbnails: false, // Disabling thumbs speeds up large file adding
-            init: function () {
-                this.on("uploadprogress", (file, progress) => {
-                    if (file.previewElement) {
-                        file.previewElement.querySelector("[data-dz-uploadprogress]").style.width = progress + "%";
-                    }
-                });
-            }
-        });
-        // Dropzone.autoDiscover = false;
-        // let uploadzone = new Dropzone("#air-drop", {
-        // 	maxFilesize: null,
-        // 	filesizeBase: 1024,
-        // 	dictDefaultMessage: "",
-        // 	init: function () {
-        // 		this.on("uploadprogress", (file, progress, bytesSent) => {
-        // 			if (file.previewElement) {
-        // 				let progressElement = file.previewElement.querySelector("[data-dz-uploadprogress]");
-        // 				if (progressElement) {
-        // 					progressElement.style.width = progress + "%";
-        // 					progressElement.innerHTML = Math.floor(progress) + "%";
-        // 				}
-        // 			}
-        // 		});
-        // 		this.on("success", (file, response) => {
-        // 			file.previewElement.classList.add("dz-success");
-        // 		});
-        // 	}
-        // });
-    </script>
+				<div class="card shadow-sm border-0 rounded-5">
+					<div class="card-body p-0">
+						<form action="/upload" th:action="@{/upload}" class="dropzone" id="air-drop">
+							<div class="dz-message needsclick">
+								<i class="bi bi-cloud-arrow-up-fill dz-icon-large"></i>
+								<h4 class="mt-2">Drop files here or click to upload</h4>
+								<span class="text-muted small">Supports all file types • Unlimited size</span>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
+	<script src="../static/dropzone/dropzone.js" th:src="@{/dropzone/dropzone.js}"></script>
+	<script>
+		Dropzone.autoDiscover = false;
+		let uploadzone = new Dropzone("#air-drop", {
+			maxFilesize: null,
+			filesizeBase: 1024,
+			// 	dictDefaultMessage: "",
+			createImageThumbnails: false, // Disabling thumbs speeds up large file adding
+			init: function () {
+				this.on("uploadprogress", (file, progress) => {
+					if (file.previewElement) {
+						let progressElement = file.previewElement.querySelector("[data-dz-uploadprogress]")
+						progressElement.style.width = progress + "%";
+//						progressElement.innerHTML = Math.floor(progress) + "%";
+					}
+				});
+				this.on("success", (file, response) => {
+					file.previewElement.classList.add("dz-success");
+				});
+			}
+		});
+	</script>
 </body>
 
 </html>
