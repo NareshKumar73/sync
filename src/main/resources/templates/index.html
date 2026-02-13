@@ -2,28 +2,23 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 
 <head>
-<title>SYNC - KING | Files</title>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="../static/bootstrap/bootstrap.css"
-	th:href="@{/bootstrap/bootstrap.css}">
-<link rel="stylesheet"
-	href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-<link rel="stylesheet" href="../static/css/design.css"
-	th:href="@{/css/design.css}">
+	<title>SYNC - KING | Files</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="../static/bootstrap/bootstrap.css" th:href="@{/bootstrap/bootstrap.css}">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+	<link rel="stylesheet" href="../static/css/design.css" th:href="@{/css/design.css}">
 </head>
 
 <body>
 	<nav class="navbar-custom sticky-top z-3">
-		<div
-			class="container d-flex justify-content-between align-items-center">
-			<a
-				class="navbar-brand fw-bold text-primary d-flex align-items-center gap-2"
-				href="#"> <i class="bi bi-hdd-network-fill"></i> SYNC - KING
+		<div class="container d-flex justify-content-between align-items-center">
+			<a class="navbar-brand fw-bold text-primary d-flex align-items-center gap-2" href="#"> <i
+					class="bi bi-hdd-network-fill"></i> SYNC - KING
 			</a>
 			<div class="d-flex gap-2">
-				<button class="btn btn-outline-secondary btn-sm rounded-pill"
-					data-bs-toggle="modal" data-bs-target="#ipModal">
+				<button class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-toggle="modal"
+					data-bs-target="#ipModal">
 					<i class="bi bi-router"></i> IPs
 				</button>
 				<a th:href="@{/u}" class="btn btn-primary btn-sm rounded-pill px-4">
@@ -32,23 +27,26 @@
 			</div>
 		</div>
 	</nav>
+	<nav class="mb-3">
+		<a th:href="@{/}">resource-for-sync-app</a>
+		<span th:each="p : ${#strings.arraySplit(pwd, '/')}">
+			/ <a th:href="@{'/d?path=' + ${p}}" th:text="${p}"></a>
+		</span>
+	</nav>
 
 	<div class="container my-4">
 
-		<div
-			class="toolbar-container d-flex flex-wrap gap-3 align-items-center justify-content-between"
+		<div class="toolbar-container d-flex flex-wrap gap-3 align-items-center justify-content-between"
 			th:unless="${local.totalElements == 0}">
 			<div class="input-group" style="max-width: 300px;">
-				<span class="input-group-text bg-white border-end-0"><i
-					class="bi bi-search"></i></span> <input type="text" id="searchInput"
-					class="form-control border-start-0" placeholder="Filter files..."
+				<span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span> <input
+					type="text" id="searchInput" class="form-control border-start-0" placeholder="Filter files..."
 					onkeyup="filterFiles()">
 			</div>
 
 			<div class="d-flex align-items-center gap-2">
-				<span class="text-muted small">Sort by:</span> <select
-					id="sortSelect" class="form-select form-select-sm"
-					style="width: auto;" onchange="sortFiles()">
+				<span class="text-muted small">Sort by:</span> <select id="sortSelect"
+					class="form-select form-select-sm" style="width: auto;" onchange="sortFiles()">
 					<option value="name">Name (A-Z)</option>
 					<option value="date">Date (Newest)</option>
 					<option value="size">Size (Largest)</option>
@@ -65,52 +63,60 @@
 				network.</p>
 		</div>
 
-		<form id="download-form" action="#" method="post"
-			th:action="@{/zip-stream}" th:object="${form}">
+		<form id="download-form" action="#" method="post" th:action="@{/zip-stream}" th:object="${form}">
 			<div th:unless="${local.totalElements == 0}" class="file-card">
 
 				<div class="p-3 bg-light border-bottom d-flex align-items-center">
-					<input class="form-check-input me-2" type="checkbox"
-						id="select-all" onclick="toggleAll(this)"> <label
-						class="form-check-label small fw-bold text-muted" for="select-all">SELECT
+					<input class="form-check-input me-2" type="checkbox" id="select-all" onclick="toggleAll(this)">
+					<label class="form-check-label small fw-bold text-muted" for="select-all">SELECT
 						ALL</label>
 				</div>
 
 				<div id="file-list-container">
-					<div th:each="file : ${local.files}" class="file-item"
-						th:data-name="${file.name.toLowerCase()}"
-						th:data-date="${file.lastModified}"
-						th:data-size="${file.sizeInBytes}">
+					<div th:each="file : ${local.files}" class="file-item" th:data-name="${file.name.toLowerCase()}"
+						th:data-date="${file.lastModified}" th:data-size="${file.sizeInBytes}">
+
 						<div class="d-flex align-items-center gap-3">
-							<input class="form-check-input file-check" type="checkbox"
-								th:field="*{filecode}" th:value="${file.code}"
-								onchange="updateSelection()">
+							<input class="form-check-input file-check" type="checkbox" th:field="*{filecode}"
+								th:value="${file.code}" onchange="updateSelection()">
 							<div class="file-icon">
-								<i class="bi bi-file-earmark-text"></i>
+								<i th:class="${file.directory}
+							        ? 'bi bi-folder-fill text-warning'
+							        : 'bi bi-file-earmark-text text-secondary'"></i>
 							</div>
 						</div>
 
 						<div class="file-details">
-							<span class="file-name" th:text="${file.name}">File.txt</span>
+<!--							<a th:if="${file.directory}" th:href="${file.url}"
+								class="file-name fw-bold text-decoration-none" th:text="${file.name}"></a>
+-->								<a th:if="${file.directory}" th:href="@{/d(path=${file.relativePath})}"
+									class="file-name fw-bold text-decoration-none" th:text="${file.name}">
+									Folder
+								</a>
+							<span th:unless="${file.directory}" class="file-name" th:text="${file.name}">File</span>
 							<div class="file-meta">
 								<span class="folder-badge" th:if="${file.relativePath != ''}"
-									th:text="${file.relativePath}">/folder</span> <span
-									th:text="${file.size}">2 MB</span> <span>•</span> <span
-									th:text="${file.lastModified}">Today</span>
+									th:text="${file.relativePath}">/folder</span> 
+								<span th:text="${file.size}">2 MB</span> <span>•</span> <span th:text="${file.lastModified}">Today</span>
 							</div>
 						</div>
 
 						<div class="d-flex gap-2">
-							<button type="button"
-								class="btn btn-light btn-sm rounded-circle text-secondary"
-								th:onclick="openPreview([[${file.url}]], [[${file.name}]])"
-								title="Preview">
+							<button type="button" class="btn btn-light btn-sm rounded-circle text-secondary"
+								th:onclick="openPreview([[${file.url}]], [[${file.name}]])" title="Preview">
 								<i class="bi bi-eye"></i>
 							</button>
-							<a th:href="${file.url}"
-								class="btn btn-light btn-sm rounded-circle text-primary"
+							<a th:href="${file.url}" class="btn btn-light btn-sm rounded-circle text-primary"
 								title="Download"> <i class="bi bi-download"></i>
 							</a>
+							<!-- <a th:if="${file.directory}" th:href="?path=${file.relativePath}"
+								class="btn btn-light btn-sm rounded-circle text-success" title="Open Folder">
+								<i class="bi bi-file-zip"></i>
+							</a> -->
+<!--							<a th:if="${file.directory}" th:href="@{/d(path=${file.relativePath})}"
+								class="file-name fw-bold text-decoration-none" th:text="Open">
+								Folder
+							</a>-->
 						</div>
 					</div>
 				</div>
@@ -124,9 +130,7 @@
 		<span><span id="selected-count" class="fw-bold">0</span>
 			selected</span>
 		<div class="vr bg-secondary mx-2"></div>
-		<button type="button"
-			class="btn btn-light btn-sm rounded-pill fw-bold text-dark"
-			onclick="submitZipDownload()">
+		<button type="button" class="btn btn-light btn-sm rounded-pill fw-bold text-dark" onclick="submitZipDownload()">
 			Download ZIP <i class="bi bi-file-zip ms-1"></i>
 		</button>
 	</div>
@@ -136,11 +140,9 @@
 			<div class="modal-content bg-dark text-white">
 				<div class="modal-header border-bottom border-secondary">
 					<h5 class="modal-title fs-6" id="previewTitle">Preview</h5>
-					<button type="button" class="btn-close btn-close-white"
-						data-bs-dismiss="modal"></button>
+					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
 				</div>
-				<div class="modal-body p-0 d-flex justify-content-center bg-black"
-					id="previewBody"></div>
+				<div class="modal-body p-0 d-flex justify-content-center bg-black" id="previewBody"></div>
 				<div class="modal-footer border-top border-secondary py-1">
 					<a href="#" id="previewDownloadBtn" class="btn btn-primary btn-sm">Download
 						Original</a>
@@ -156,8 +158,7 @@
 					<h5 class="modal-title">
 						<i class="bi bi-broadcast me-2"></i>Network Interfaces
 					</h5>
-					<button type="button" class="btn-close btn-close-white"
-						data-bs-dismiss="modal"></button>
+					<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
 				</div>
 				<div class="modal-body p-0">
 					<div th:each="entry : ${ips}"
@@ -165,21 +166,20 @@
 						<div class="overflow-hidden me-3">
 							<small class="text-uppercase fw-bold text-muted d-block"
 								style="font-size: 0.65rem;">Interface</small> <span
-								class="text-truncate d-block fw-medium"
-								style="max-width: 220px;" th:text="${entry.key}">Ethernet
+								class="text-truncate d-block fw-medium" style="max-width: 220px;"
+								th:text="${entry.key}">Ethernet
 								Adapter</span>
 						</div>
 						<div class="text-end">
-							<small class="text-uppercase fw-bold text-muted d-block"
-								style="font-size: 0.65rem;">IPv4 Address</small>
+							<small class="text-uppercase fw-bold text-muted d-block" style="font-size: 0.65rem;">IPv4
+								Address</small>
 							<code class="text-primary fw-bold fs-6" style="cursor: pointer;"
-								th:onclick="copyToClipboard([[${entry.value}]])"
-								title="Click to copy" th:text="${entry.value}">192.168.1.1</code>
+								th:onclick="copyToClipboard([[${entry.value}]])" title="Click to copy"
+								th:text="${entry.value}">192.168.1.1</code>
 						</div>
 					</div>
 
-					<div th:if="${ips == null || ips.isEmpty()}"
-						class="p-4 text-center text-muted">
+					<div th:if="${ips == null || ips.isEmpty()}" class="p-4 text-center text-muted">
 						<i class="bi bi-wifi-off fs-2 d-block mb-2"></i> No active
 						networks found.
 					</div>
@@ -192,8 +192,7 @@
 		</div>
 	</div>
 
-	<script src="../static/bootstrap/bootstrap.bundle.js"
-		th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
+	<script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
 	<script src="../static/js/code.js" th:src="@{/js/code.js}"></script>
 </body>
 

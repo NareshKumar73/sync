@@ -7,6 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.source.open.payload.FileListJson;
 import com.source.open.payload.FileMeta;
@@ -26,9 +27,9 @@ public class PageController {
 	private final NetworkUtil nu;
 
 	@GetMapping({ "/", "/d" })
-	public String download(Model model) {
+	public String browse(@RequestParam(required = false) String path, Model model) {
 
-		List<FileMeta> list = fs.refreshFileList();
+		List<FileMeta> list = fs.listDirectory(path);
 
 		FileListJson json = new FileListJson(list, list.size());
 
@@ -39,6 +40,7 @@ public class PageController {
 		model.addAttribute("local", json);
 		model.addAttribute("form", new FileRequest());
 		model.addAttribute("ips", ipMap);
+		model.addAttribute("pwd", path == null ? "" : path);
 
 		return "index";
 	}

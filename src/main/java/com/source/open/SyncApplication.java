@@ -38,7 +38,7 @@ public class SyncApplication implements CommandLineRunner {
 
 		System.out.println("SYNC SERVICE WITHOUT DISCOVERY AND SYNC FEATURE.\nFILE SHARING SUPPORT ONLY.");
 
-		fs.refreshFileList();
+//		fs.refreshFileList();
 
 //		nu.fetchLocalIpList();
 //		EXIT CODE 1 = NO IP FOUND VERY IMPORTANT
@@ -82,7 +82,7 @@ public class SyncApplication implements CommandLineRunner {
 
 	public void sync() {
 //		------------------------------		REFRESH LOCAL FILE LIST ONCE		------------------------------
-		fs.refreshFileList();
+//		fs.refreshFileList();
 
 //		FILE CODE - OBJECT
 //		Map<String, FileMeta> localFiles = fs.getLocalFiles();
