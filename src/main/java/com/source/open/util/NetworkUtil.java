@@ -1,14 +1,11 @@
 package com.source.open.util;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -16,8 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -39,141 +34,14 @@ public class NetworkUtil {
 //	THIS DEVICE IP LIST - IP & BOOLEAN INDICATING IF IT IS REACHABLE FROM LAN
 	private final ConcurrentHashMap<String, Boolean> localIpList = new ConcurrentHashMap<>();
 
-//	DEVICE OVER LAN WITH THIS SOFTWARE RUNNING - THEIR -> IP & PORT
-	@Getter
-	private final ConcurrentHashMap<String, Integer> activeNodes = new ConcurrentHashMap<>();
-
 	private final int serverPort;
 
-	private final int udpPort;
-
-	private final DatagramSocket udpServer;
-
-//	Can be replaced with found IP function to search all broadcast address and then using this list to broadcast discovery packet 
-//	if this global broadcast doesn't work correctly.
-	private InetAddress broadcastIp;
-
-	private Thread udpServerThread;
-
-	private ExecutorService udpServerExecutor;
-	private ExecutorService udpClientExecutor;
-
-	/*
-	 * Their are two type of udp message 1. b:port b = broadcast 2. r:port r = reply
-	 * to broadcast
-	 */
-
-	public NetworkUtil(@Value("${server.port}") Integer serverPort, @Value("${server.port}") Integer udpPort)
-			throws UnknownHostException, SocketException {
-
+	public NetworkUtil(@Value("${server.port}") Integer serverPort) {
 		this.serverPort = serverPort;
-
-		this.udpPort = udpPort;
-
 		client = RestClient.create();
-
-		this.broadcastIp = InetAddress.getByAddress(new byte[] { (byte) 255, (byte) 255, (byte) 255, (byte) 255 });
-
-		udpServer = new DatagramSocket(udpPort);
-
-		udpServerExecutor = Executors.newSingleThreadExecutor(runnable -> {
-			Thread thread = new Thread(runnable);
-			thread.setName("UDP Server Thread");
-			thread.setDaemon(true);
-			return thread;
-		});
-
-		udpClientExecutor = Executors.newSingleThreadExecutor(runnable -> {
-			Thread thread = new Thread(runnable);
-			thread.setName("UDP Client Thread");
-			thread.setDaemon(true);
-			return thread;
-		});
-
 	}
 
-	public void startListening() {
 
-		Runnable server = () -> {
-
-			log.info("Starting sync app discovery service over lan");
-
-			while (!Thread.interrupted()) {
-				try {
-					DatagramPacket buf = new DatagramPacket(new byte[7], 7);
-
-					udpServer.receive(buf);
-
-					String data = new String(buf.getData(), buf.getOffset(), buf.getLength(),
-							StandardCharsets.US_ASCII);
-
-					String[] message = data.split(":");
-
-					String host = buf.getAddress().getHostAddress();
-					String port = message[1];
-
-					if (message[0].equals("b")) {
-
-//						IF IT WAS ME THE VALIDATE ONE IP
-						if (localIpList.containsKey(host))
-							localIpList.put(host, true);
-//						IF IT WAS ANOTHER NODE BROADCAST THEN SEND ATTENDENCE
-						else
-							sendAttendance(buf.getAddress());
-					}
-//					IF IT WAS A REPLY MESSAGE THE PUT THIS HOST TO ACTIVE CLIENTS
-					else
-						activeNodes.put(host, Integer.parseInt(port));
-
-					System.out.println("Greetings from: " + host + ":" + port);
-
-				} catch (IOException e) {
-					log.error(e);
-					continue;
-				}
-			}
-
-			log.info("Closing Discovery Server");
-
-			udpServer.close();
-
-		};
-
-		this.udpServerThread = new Thread(server);
-
-		udpServerExecutor.execute(this.udpServerThread);
-	}
-
-//	Send echo message with this server port and wait for active nodes reply
-	public void sendBroadcast() {
-		Runnable broadcast = () -> {
-			try {
-				byte[] data = ("b:" + serverPort + "").getBytes(StandardCharsets.US_ASCII);
-
-				udpServer.send(new DatagramPacket(data, data.length, broadcastIp, udpPort));
-			} catch (Exception e) {
-				System.out.println("Failed to send broadcast");
-			}
-		};
-
-		System.out.println("Sending Broadcast");
-		udpClientExecutor.execute(broadcast);
-	}
-
-	public void sendAttendance(InetAddress address) {
-		Runnable echo = () -> {
-			try {
-				byte[] data = ("r:" + serverPort + "").getBytes(StandardCharsets.US_ASCII);
-
-				udpServer.send(new DatagramPacket(data, data.length, address, udpPort));
-			} catch (Exception e) {
-				System.out.println("Failed to send reply");
-			}
-		};
-
-		System.out.println("Sending reply");
-		udpClientExecutor.execute(echo);
-	}
 
 	public Map<String, Boolean> getLocalIpList() {
 		if (localIpList.isEmpty()) {
@@ -253,29 +121,7 @@ public class NetworkUtil {
 		return ipMap;
 	}
 
-	public void refreshServerList() {
-		// REMOVE PREVIOUS SERVER
-		activeNodes.clear();
 
-		// NOW SEND ECHO SIGNAL AND WAIT FOR ACTIVE NODES
-		sendBroadcast();
-	}
-
-	public List<FileListJson> fetchFileListFromEveryone() {
-
-		List<FileListJson> list = new ArrayList<>();
-
-		for (Map.Entry<String, Integer> entry : activeNodes.entrySet()) {
-			String host = entry.getKey();
-			Integer port = entry.getValue();
-
-			list.add(fetchFileList("http://" + host + ":" + port));
-		}
-
-		return list;
-	}
-
-//	OLD METHOD WITHOUT ERROR HANDLING
 //	public FileListJson fetchFileList(String url) {
 //
 //		return WebClient

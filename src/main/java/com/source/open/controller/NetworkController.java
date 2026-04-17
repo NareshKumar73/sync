@@ -1,18 +1,22 @@
 package com.source.open.controller;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.time.LocalDateTime;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.source.open.exception.ResourceNotFoundException;
 import com.source.open.payload.ApiMessage;
+import com.source.open.payload.InstanceNode;
 import com.source.open.util.NetworkUtil;
+import com.source.open.util.InstanceNodeRepository;
+import com.source.open.util.SyncService;
+import com.source.open.payload.FileMeta;
+import org.springframework.web.client.RestClient;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,17 +26,18 @@ import lombok.RequiredArgsConstructor;
 public class NetworkController {
 	
 	private final NetworkUtil nu;
+	private final InstanceNodeRepository nodeRepository;
+	private final SyncService syncService;
+	private final RestClient restClient = RestClient.create();
 
 	@GetMapping("/ip")
 	public ResponseEntity<Map<String, String>> getLocalIP() {
-		
-		String ip =  nu.getLocalIpList()
-						.entrySet().stream()
-						.filter(entry -> entry.getValue() == true)
-						.findFirst()
-						.orElseThrow(() -> new ResourceNotFoundException("Couldn't confirm any ip as active."))
-						.getKey();
-		
+		String ip = nu.getLocalIpList()
+				.entrySet().stream()
+				.filter(Map.Entry::getValue)
+				.findFirst()
+				.orElseThrow(() -> new ResourceNotFoundException("Couldn't confirm any ip as active."))
+				.getKey();
 		return ResponseEntity.ok(Collections.singletonMap("ip", ip));
 	}
 
@@ -46,32 +51,96 @@ public class NetworkController {
 		return ResponseEntity.ok(nu.fetchLocalIpList());
 	}
 
-	@GetMapping("/search")
-	public ResponseEntity<ApiMessage> search() {
-		
-		nu.refreshServerList();
-		
-		return ResponseEntity.ok(new ApiMessage("Sending broadcast and waiting for reply.", true));
-	}
-	
-	@GetMapping("/servers")
-	public ResponseEntity<ApiMessage> servers() {
-		
-		List<String> serverUrls = new ArrayList<>();
-		
-		nu.getActiveNodes().forEach((host,port) -> {
-			serverUrls.add("http://" + host + ":" + port + "/d");
-		});
-		
-		return ResponseEntity.ok(new ApiMessage(serverUrls, true));
+	@GetMapping("/api/nodes")
+	public ResponseEntity<List<InstanceNode>> getNodes() {
+		return ResponseEntity.ok(nodeRepository.findAll());
 	}
 
-//	@GetMapping("/check")
-//	public ResponseEntity<ApiMessage> checkDownload() {
-//		
-//		return nu.downloadFileReactively("http://localhost:9005/resource?filecode=Mjg1NjU5X21hcmtlcl9tYXBfaWNvbi5zdmc", "map.svg")
-//				.then(new ApiMessage("download complete", true));
-//	}
+	@PostMapping("/api/nodes")
+	public ResponseEntity<?> addNode(@RequestBody InstanceNode node) {
+		Optional<InstanceNode> existing = nodeRepository.findByIpAddressAndPort(node.getIpAddress(), node.getPort());
+		if (existing.isPresent()) {
+			return ResponseEntity.badRequest().body(new ApiMessage("Node already exists.", false));
+		}
+		
+		boolean isWorking = testConnection(node.getIpAddress(), node.getPort());
+		node.setIsWorking(isWorking);
+		if (isWorking) {
+			node.setLastActive(LocalDateTime.now());
+		}
+		
+		InstanceNode saved = nodeRepository.save(node);
+		return ResponseEntity.ok(saved);
+	}
 
+	@DeleteMapping("/api/nodes/{id}")
+	public ResponseEntity<ApiMessage> deleteNode(@PathVariable Long id) {
+		nodeRepository.deleteById(id);
+		return ResponseEntity.ok(new ApiMessage("Node deleted successfully.", true));
+	}
 
+	@PostMapping("/api/nodes/test")
+	public ResponseEntity<ApiMessage> testNode(@RequestBody InstanceNode node) {
+		boolean isWorking = testConnection(node.getIpAddress(), node.getPort());
+		if (node.getId() != null) {
+			nodeRepository.findById(node.getId()).ifPresent(existing -> {
+				existing.setIsWorking(isWorking);
+				if (isWorking) {
+					existing.setLastActive(LocalDateTime.now());
+				}
+				nodeRepository.save(existing);
+			});
+		}
+		if (isWorking) {
+			return ResponseEntity.ok(new ApiMessage("Connection successful.", true));
+		} else {
+			return ResponseEntity.ok(new ApiMessage("Connection failed.", false));
+		}
+	}
+
+	private boolean testConnection(String ip, Integer port) {
+		try {
+			String url = "http://" + ip + ":" + port + "/api/ping";
+			ResponseEntity<String> response = restClient.get()
+					.uri(url)
+					.retrieve()
+					.toEntity(String.class);
+			return response.getStatusCode().is2xxSuccessful();
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	@GetMapping("/api/ping")
+	public ResponseEntity<String> ping() {
+		return ResponseEntity.ok("pong");
+	}
+
+	@PostMapping("/api/sync/trigger")
+	public ResponseEntity<ApiMessage> triggerSync() {
+		syncService.triggerSync();
+		return ResponseEntity.ok(new ApiMessage("Sync triggered.", true));
+	}
+
+	@PostMapping("/api/sync/toggle")
+	public ResponseEntity<ApiMessage> toggleAutoSync(@RequestParam boolean enabled) {
+		syncService.setAutoSync(enabled);
+		return ResponseEntity.ok(new ApiMessage("Auto sync " + (enabled ? "enabled" : "disabled") + ".", true));
+	}
+
+	@GetMapping("/api/sync/status")
+	public ResponseEntity<Map<String, Boolean>> getSyncStatus() {
+		return ResponseEntity.ok(Collections.singletonMap("enabled", syncService.isAutoSyncEnabled()));
+	}
+
+	@GetMapping("/api/sync/conflicts")
+	public ResponseEntity<Map<String, FileMeta>> getConflicts() {
+		return ResponseEntity.ok(syncService.getConflicts());
+	}
+
+	@PostMapping("/api/sync/resolve")
+	public ResponseEntity<ApiMessage> resolveConflict(@RequestParam String relativePath, @RequestParam String baseUrl) {
+		syncService.resolveConflict(relativePath, baseUrl);
+		return ResponseEntity.ok(new ApiMessage("Conflict resolved.", true));
+	}
 }

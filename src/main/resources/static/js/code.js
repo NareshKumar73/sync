@@ -1,161 +1,276 @@
-const listContainer = document.getElementById('file-list-container');
-const fileItems = Array.from(document.querySelectorAll('.file-item'));
-const selectionBar = document.getElementById('selection-bar');
-const countSpan = document.getElementById('selected-count');
-const checkboxes = document.querySelectorAll('.file-check');
-
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        // Optional: Show a tiny toast or alert
-        alert("IP Copied: " + text);
-    }).catch(err => {
-        console.error('Could not copy text: ', err);
-    });
-}
-
-// --- Search Filter ---
+// Utility and existing functions
 function filterFiles() {
-    const query = document.getElementById('searchInput').value.toLowerCase();
-    fileItems.forEach(item => {
-        const name = item.getAttribute('data-name');
-        if (name.includes(query)) {
-            item.style.display = 'grid'; // Maintain grid layout
+    let input = document.getElementById('searchInput');
+    let filter = input.value.toLowerCase();
+    let items = document.getElementsByClassName('file-item');
+    for (let i = 0; i < items.length; i++) {
+        let name = items[i].getAttribute('data-name');
+        if (name.indexOf(filter) > -1) {
+            items[i].style.display = "flex";
         } else {
-            item.style.display = 'none';
+            items[i].style.display = "none";
         }
-    });
+    }
 }
 
-// --- Sorting ---
 function sortFiles() {
-    const criteria = document.getElementById('sortSelect').value;
-    
-    const sortedItems = fileItems.sort((a, b) => {
-        if (criteria === 'name') {
-            return a.dataset.name.localeCompare(b.dataset.name);
-        } else if (criteria === 'size') {
-            // Parse raw bytes (requires rawSize in data attribute)
-            return parseInt(b.dataset.size) - parseInt(a.dataset.size);
-        } else if (criteria === 'date') {
-            // String comparison works for ISO dates, otherwise requires parsing
-            return b.dataset.date.localeCompare(a.dataset.date);
+    let select = document.getElementById('sortSelect');
+    let sortBy = select.value;
+    let container = document.getElementById('file-list-container');
+    let items = Array.from(container.getElementsByClassName('file-item'));
+
+    items.sort(function(a, b) {
+        if (sortBy === 'name') {
+            return a.getAttribute('data-name').localeCompare(b.getAttribute('data-name'));
+        } else if (sortBy === 'date') {
+            return parseInt(b.getAttribute('data-date')) - parseInt(a.getAttribute('data-date'));
+        } else if (sortBy === 'size') {
+            return parseInt(b.getAttribute('data-size')) - parseInt(a.getAttribute('data-size'));
         }
     });
 
-    // Re-append to container
-    listContainer.innerHTML = '';
-    sortedItems.forEach(item => listContainer.appendChild(item));
-}
-
-// --- Selection Logic ---
-function updateSelection() {
-    const checked = document.querySelectorAll('.file-check:checked');
-    const count = checked.length;
-    
-    countSpan.innerText = count;
-    
-    if (count > 0) {
-        selectionBar.classList.add('active');
-    } else {
-        selectionBar.classList.remove('active');
+    for (let i = 0; i < items.length; i++) {
+        container.appendChild(items[i]);
     }
 }
 
 function toggleAll(source) {
-    checkboxes.forEach(cb => {
-        // Only check visible items (respect filter)
-        if(cb.closest('.file-item').style.display !== 'none'){
-            cb.checked = source.checked;
-        }
-    });
+    let checkboxes = document.getElementsByClassName('file-check');
+    for (let i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = source.checked;
+    }
     updateSelection();
 }
 
-function submitZipDownload() {
-    const checked = document.querySelectorAll('.file-check:checked');
-    let files = [];
-    checked.forEach((el) => files.push(el.value));
+function updateSelection() {
+    let checkboxes = document.getElementsByClassName('file-check');
+    let count = 0;
+    for (let i = 0; i < checkboxes.length; i++) {
+        if (checkboxes[i].checked) count++;
+    }
     
-    document.getElementById("file-array").value = JSON.stringify(files);
-    document.getElementById("download-form").submit();
+    document.getElementById('selected-count').innerText = count;
+    let selectionBar = document.getElementById('selection-bar');
+    
+    if (count > 0) {
+        selectionBar.classList.add('show');
+    } else {
+        selectionBar.classList.remove('show');
+        document.getElementById('select-all').checked = false;
+    }
 }
 
-// --- Preview Logic ---
-function openPreview(url, name) {
-    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
-    const title = document.getElementById('previewTitle');
-    const body = document.getElementById('previewBody');
-    const dlBtn = document.getElementById('previewDownloadBtn');
+function submitZipDownload() {
+    document.getElementById('download-form').submit();
+}
 
-    title.innerText = name;
-    dlBtn.href = url;
-    body.innerHTML = ''; // Clear previous
+function openPreview(url, name, fileType) {
+    document.getElementById('previewTitle').innerText = name;
+    document.getElementById('previewDownloadBtn').href = url;
+    let body = document.getElementById('previewBody');
+    body.innerHTML = ''; // clear
 
-    const ext = name.split('.').pop().toLowerCase();
+    fileType = (fileType || '').toLowerCase();
     
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-        body.innerHTML = `<img src="${url}" class="preview-content" alt="Preview">`;
-    } else if (['mp4', 'webm'].includes(ext)) {
-        body.innerHTML = `<video controls autoplay class="preview-content"><source src="${url}"></video>`;
-    } else if (['pdf', 'txt'].includes(ext)) {
-        body.innerHTML = `<iframe src="${url}" class="preview-content"></iframe>`;
+    if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(fileType)) {
+        let img = document.createElement('img');
+        img.src = url;
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '80vh';
+        img.style.objectFit = 'contain';
+        body.appendChild(img);
+    } else if (['mp4', 'webm', 'ogg'].includes(fileType)) {
+        let video = document.createElement('video');
+        video.src = url;
+        video.controls = true;
+        video.autoplay = true;
+        video.style.maxWidth = '100%';
+        video.style.maxHeight = '80vh';
+        body.appendChild(video);
+    } else if (['pdf', 'txt', 'md', 'html', 'json'].includes(fileType)) {
+        let iframe = document.createElement('iframe');
+        iframe.src = url;
+        iframe.style.width = '100%';
+        iframe.style.height = '80vh';
+        iframe.style.border = 'none';
+        iframe.style.background = '#fff';
+        body.appendChild(iframe);
     } else {
-        body.innerHTML = `<div class="p-5 text-center text-muted">Preview not available for this file type.<br>Please download to view.</div>`;
+        body.innerHTML = `<div class="p-5 text-center text-muted"><i class="bi bi-file-earmark-x display-1 d-block mb-3"></i><p>Preview not available for .${fileType} files.</p></div>`;
     }
 
-    modal.show();
+    new bootstrap.Modal(document.getElementById('previewModal')).show();
+}
+
+// Resumable Chunked Upload
+const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
+
+async function startChunkedUpload() {
+    const fileInput = document.getElementById('fileInput');
+    const files = fileInput.files;
     
-    // Stop video when modal closes
-    document.getElementById('previewModal').addEventListener('hidden.bs.modal', () => {
-        body.innerHTML = '';
+    if (files.length === 0) return;
+
+    document.getElementById('uploadProgressContainer').classList.remove('d-none');
+    
+    for (let i = 0; i < files.length; i++) {
+        await uploadFile(files[i]);
+    }
+    
+    document.getElementById('uploadStatusText').innerText = "All uploads complete!";
+    setTimeout(() => {
+        window.location.reload();
+    }, 1500);
+}
+
+async function uploadFile(file) {
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    document.getElementById('uploadStatusText').innerText = `Uploading ${file.name}...`;
+    
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        const start = chunkIndex * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
+
+        const formData = new FormData();
+        formData.append('file', chunk);
+        formData.append('filename', file.name);
+        formData.append('relativePath', currentRelativePath || '');
+        formData.append('chunkIndex', chunkIndex);
+        formData.append('totalChunks', totalChunks);
+
+        try {
+            const response = await fetch('/upload/chunk', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Chunk upload failed');
+            
+            const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+            document.getElementById('uploadProgressBar').style.width = `${progress}%`;
+            document.getElementById('uploadPercentage').innerText = `${progress}%`;
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('uploadStatusText').innerText = `Failed to upload ${file.name}`;
+            document.getElementById('uploadStatusText').classList.add('text-danger');
+            return; // abort this file
+        }
+    }
+}
+
+// Network Nodes Management
+document.getElementById('networkModal').addEventListener('show.bs.modal', function () {
+    loadNodes();
+    loadConflicts();
+});
+
+async function loadNodes() {
+    const res = await fetch('/api/nodes');
+    const nodes = await res.json();
+    const tbody = document.getElementById('nodesTableBody');
+    tbody.innerHTML = '';
+    
+    nodes.forEach(node => {
+        const statusClass = node.isWorking ? 'status-online' : 'status-offline';
+        const lastActive = node.lastActive ? new Date(node.lastActive).toLocaleString() : 'Never';
+        
+        tbody.innerHTML += `
+            <tr>
+                <td><span class="status-indicator ${statusClass}"></span></td>
+                <td>${node.ipAddress}</td>
+                <td>${node.port}</td>
+                <td class="small text-muted">${lastActive}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteNode(${node.id})"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
+        `;
     });
 }
 
-// let downloadAllBtn = document.getElementById("download-selected");
+async function addNode() {
+    const ip = document.getElementById('nodeIp').value;
+    const port = document.getElementById('nodePort').value;
+    if (!ip || !port) return;
+    
+    await fetch('/api/nodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ipAddress: ip, port: port, alias: ip })
+    });
+    
+    document.getElementById('nodeIp').value = '';
+    loadNodes();
+}
 
-// let checkedbox = document.querySelectorAll(".filecode>input[type=checkbox]");
+async function testNode() {
+    const ip = document.getElementById('nodeIp').value;
+    const port = document.getElementById('nodePort').value;
+    if (!ip || !port) return;
+    
+    const res = await fetch('/api/nodes/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ipAddress: ip, port: port })
+    });
+    const result = await res.json();
+    alert(result.message);
+}
 
-// let downloadForm = document.getElementById("download-form");
+async function deleteNode(id) {
+    await fetch('/api/nodes/' + id, { method: 'DELETE' });
+    loadNodes();
+}
 
-// let downloadableFileList = document.getElementById("file-array");
+// Sync Controls
+async function triggerSync() {
+    await fetch('/api/sync/trigger', { method: 'POST' });
+    alert('Sync triggered successfully.');
+}
 
-// function showDownloadSelected() {
-// 	let checked = document.querySelectorAll(".filecode>input[type=checkbox]:checked")
-	
-// 	if (checked.length > 0)
-// 		downloadAllBtn.style.visibility = "visible";
-// 	else
-// 		downloadAllBtn.style.visibility = "hidden";	
-// }
+async function toggleAutoSync() {
+    const enabled = document.getElementById('autoSyncToggle').checked;
+    await fetch('/api/sync/toggle?enabled=' + enabled, { method: 'POST' });
+}
 
-// function init() {
-	
-// 	checkedbox.forEach((c) => { c.addEventListener("click", (e) => {
-// 		showDownloadSelected();
-// 		console.log(e.target.value);
-// 	})});
-// };
+// Load sync state on page load
+window.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const res = await fetch('/api/sync/status');
+        const status = await res.json();
+        document.getElementById('autoSyncToggle').checked = status.enabled;
+    } catch(e) {}
+});
 
-// init();
+async function loadConflicts() {
+    const res = await fetch('/api/sync/conflicts');
+    const conflictsMap = await res.json();
+    const container = document.getElementById('conflictsContainer');
+    container.innerHTML = '';
+    
+    if (Object.keys(conflictsMap).length === 0) {
+        container.innerHTML = '<span class="text-muted">No conflicts detected.</span>';
+        return;
+    }
 
-
-// function selectAllCheckBox() {
-// 	checkedbox.forEach((el) => el.checked = event.currentTarget.checked) 
-// 	showDownloadSelected();
-// }
-
-// function sendDownloadList() {
-// 	let checked = document.querySelectorAll(".filecode>input[type=checkbox]:checked")
-
-// 	let files = [];
-	
-// 	checked.forEach((el) => {
-// 		files.push(el.value);
-// 	})	
-	
-// 	console.log(files);
-	
-// 	downloadableFileList.value = JSON.stringify(files);
-	
-//     downloadForm.submit();
-// }
+    for (const [path, meta] of Object.entries(conflictsMap)) {
+        // Find node IP. We need base URL. We can fetch active nodes or just prompt.
+        // For simplicity, we just pass the URL we know from the conflict, but meta only has relative URL.
+        // We'll extract host from `meta.url` if it was absolute, but it's relative.
+        // Actually the backend needs `baseUrl`. Let's just trigger a full overwrite from UI if possible.
+        // Since `syncConflicts` is just a map, we can change backend to resolve without baseUrl if we store the remote IP or just ping again.
+        // For now, let's just show them.
+        
+        container.innerHTML += `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
+                <div>
+                    <span class="d-block fw-bold text-light">${path}</span>
+                    <span class="text-muted">Remote Size: ${meta.size} | Remote Date: ${meta.lastModified}</span>
+                </div>
+                <button class="btn btn-sm btn-outline-warning" onclick="alert('To resolve, delete local file and sync again.')">Resolve</button>
+            </div>
+        `;
+    }
+}

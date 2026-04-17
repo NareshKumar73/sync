@@ -263,6 +263,55 @@ public class FileService {
 		return result;
 	}
 
+	public List<FileMeta> listDirectoryRecursive() {
+		List<FileMeta> result = new ArrayList<>();
+		try (Stream<Path> stream = Files.walk(appDir)) {
+			stream.filter(p -> !p.equals(appDir)).forEach(path -> {
+				String name = path.getFileName().toString();
+				BasicFileAttributes meta;
+				long size = 0;
+				long time = 0;
+				boolean isDir = false;
+				try {
+					meta = Files.readAttributes(path, BasicFileAttributes.class);
+					size = meta.size();
+					time = meta.lastModifiedTime().toMillis();
+					isDir = meta.isDirectory();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				FileMeta fm = new FileMeta();
+				fm.setName(name);
+				fm.setRelativePath(appDir.relativize(path).toString().replace("\\", "/"));
+				fm.setLastModifiedEpoch(time);
+				fm.setLastModified(new Date(time).toString());
+				fm.setPath(path);
+				String urlSafeFilename = new String(base64Encoder.encode(getHashLength8(fm.getRelativePath())));
+				if (isDir) {
+					fm.setDirectory(true);
+					fm.setFileType("");
+					fm.setUrl("");
+					fm.setSize("-");
+				} else {
+					fm.setDirectory(false);
+					String downloadLink = "/download?filecode=" + urlSafeFilename;
+					fm.setCode(urlSafeFilename);
+					fm.setUrl(downloadLink);
+					fm.setSize(friendlyFileSize(size));
+					fm.setSizeInBytes(size);
+					MediaType mime = MediaTypeFactory.getMediaType(name).orElse(MediaType.APPLICATION_OCTET_STREAM);
+					fm.setFileType(mime.getSubtype());
+				}
+				localFiles.put(urlSafeFilename, fm);
+				result.add(fm);
+			});
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		result.sort(Comparator.comparing(FileMeta::isDirectory).reversed().thenComparing(FileMeta::getLastModifiedEpoch));
+		return result;
+	}
+
 	public List<FileMeta> getLocalFilesList() {
 
 		if (localFiles.isEmpty())

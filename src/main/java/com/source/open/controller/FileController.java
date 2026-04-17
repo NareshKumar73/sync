@@ -15,6 +15,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
@@ -65,6 +66,12 @@ public class FileController {
 
 		List<FileMeta> metaList = fs.listDirectory(null);
 
+		return ResponseEntity.ok(new FileListJson(metaList, metaList.size()));
+	}
+
+	@GetMapping("/files/recursive")
+	public ResponseEntity<FileListJson> recursiveFileList() {
+		List<FileMeta> metaList = fs.listDirectoryRecursive();
 		return ResponseEntity.ok(new FileListJson(metaList, metaList.size()));
 	}
 
@@ -174,7 +181,8 @@ public class FileController {
 		}
 	}
 
-//	TODO Add Zip Stream of Folder using filecode and generate filecode using relative path from appDir
+	// TODO Add Zip Stream of Folder using filecode and generate filecode using
+	// relative path from appDir
 
 	// file upload endpoint - support both multiple and single file upload
 	@PostMapping("/upload")
@@ -196,107 +204,166 @@ public class FileController {
 
 	}
 
-//	NEW CODE STARTS HERE
+	@PostMapping("/upload/chunk")
+	public ResponseEntity<?> uploadChunk(
+			@RequestParam("file") MultipartFile file,
+			@RequestParam("filename") String filename,
+			@RequestParam("relativePath") String relativePath,
+			@RequestParam("chunkIndex") int chunkIndex,
+			@RequestParam("totalChunks") int totalChunks) {
 
-//	@GetMapping("/download")
-//	public ResponseEntity<?> download(HttpServletRequest request,
-//			@RequestParam(required = false) Optional<String> filecode) throws Exception {
-//
-//		if (filecode.isEmpty())
-//			throw new FileNotFoundException("Please provide a valid filecode to download the file.");
-//
-//		FileMeta fm = fs.getLocalFiles().get(filecode.get());
-//
-//		if (fm == null)
-//			throw new ResourceNotFoundException("The file you want to download is not available on server.");
-//
-//		Path p = fm.getPath();
-//
-//		String size = String.valueOf(fm.getSizeInBytes());
-//
-//		log.debug("Client " + request.getRemoteAddr() + " is trying to download: " + filecode.get());
-//
-//		if (p == null)
-//			throw new FileNotFoundException("Please check directory and confirm the file exists.");
-//
-//		MediaType mime = MediaTypeFactory.getMediaType(fm.getName()).orElse(MediaType.APPLICATION_OCTET_STREAM);
-//
-//		String ifRangeHeader = request.getHeader("If-Range");
-//		String rangeHeader = request.getHeader("Range");
-//
-//		String eTag = generateETag(fm);
-//
-//		if (ifRangeHeader != null && !ifRangeHeader.equals(eTag)) {
-//			// If-Range doesn't match => send full file
-//			return ResponseEntity.ok().eTag(eTag).header(HttpHeaders.CONTENT_LENGTH, size)
-//					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fm.getName() + "\"")
-//					.header(HttpHeaders.CONTENT_TYPE, mime.toString()).body(new UrlResource(p.toUri()));
-//		}
-//
-//		if (rangeHeader == null) {
-//			// No Range => full file
-//			return ResponseEntity.ok().eTag(eTag).header(HttpHeaders.CONTENT_LENGTH, size)
-//					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fm.getName() + "\"")
-//					.header(HttpHeaders.CONTENT_TYPE, mime.toString()).body(new UrlResource(p.toUri()));
-//		}
-//
-//		List<HttpRange> ranges = HttpRange.parseRanges(rangeHeader);
-//		if (ranges.isEmpty()) {
-//			return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
-//					.header(HttpHeaders.CONTENT_RANGE, "bytes */" + fm.getSizeInBytes()).eTag(eTag).build();
-//		}
-//
-//		if (ranges.size() == 1) {
-//			// Single range
-//			HttpRange r = ranges.get(0);
-//			long start = r.getRangeStart(fm.getSizeInBytes());
-//			long end = r.getRangeEnd(fm.getSizeInBytes());
-//			long len = end - start + 1;
-//
-//			InputStream is = Files.newInputStream(p);
-//			is.skip(start);
-//			InputStream limited = new RangeInputStream(is, len);
+		try {
+			// Resolve target directory
+			Path targetDir = fs.getAppDir().resolve(relativePath).normalize();
+			if (!targetDir.startsWith(fs.getAppDir())) {
+				return ResponseEntity.badRequest().body("Invalid path");
+			}
+			Files.createDirectories(targetDir);
+
+			Path targetFile = targetDir.resolve(filename);
+			Path tempFile = targetDir.resolve(filename + ".part");
+
+			// If it's the first chunk, delete any existing temp file
+			if (chunkIndex == 0) {
+				Files.deleteIfExists(tempFile);
+			}
+
+			// Append chunk data
+			Files.write(tempFile, file.getBytes(),
+					StandardOpenOption.CREATE,
+					StandardOpenOption.APPEND);
+
+			// If it's the last chunk, rename to final filename
+			if (chunkIndex == totalChunks - 1) {
+				Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+				return ResponseEntity.ok().body(Map.of("message", "Upload complete", "completed", true));
+			}
+
+			return ResponseEntity.ok().body(Map.of("message", "Chunk received", "completed", false));
+		} catch (IOException e) {
+			log.error("Error uploading chunk", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error uploading chunk");
+		}
+	}
+
+	// NEW CODE STARTS HERE
+
+	// @GetMapping("/download")
+	// public ResponseEntity<?> download(HttpServletRequest request,
+	// @RequestParam(required = false) Optional<String> filecode) throws Exception {
+	//
+	// if (filecode.isEmpty())
+	// throw new FileNotFoundException("Please provide a valid filecode to download
+	// the file.");
+	//
+	// FileMeta fm = fs.getLocalFiles().get(filecode.get());
+	//
+	// if (fm == null)
+	// throw new ResourceNotFoundException("The file you want to download is not
+	// available on server.");
+	//
+	// Path p = fm.getPath();
+	//
+	// String size = String.valueOf(fm.getSizeInBytes());
+	//
+	// log.debug("Client " + request.getRemoteAddr() + " is trying to download: " +
+	// filecode.get());
+	//
+	// if (p == null)
+	// throw new FileNotFoundException("Please check directory and confirm the file
+	// exists.");
+	//
+	// MediaType mime =
+	// MediaTypeFactory.getMediaType(fm.getName()).orElse(MediaType.APPLICATION_OCTET_STREAM);
+	//
+	// String ifRangeHeader = request.getHeader("If-Range");
+	// String rangeHeader = request.getHeader("Range");
+	//
+	// String eTag = generateETag(fm);
+	//
+	// if (ifRangeHeader != null && !ifRangeHeader.equals(eTag)) {
+	// // If-Range doesn't match => send full file
+	// return ResponseEntity.ok().eTag(eTag).header(HttpHeaders.CONTENT_LENGTH,
+	// size)
+	// .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" +
+	// fm.getName() + "\"")
+	// .header(HttpHeaders.CONTENT_TYPE, mime.toString()).body(new
+	// UrlResource(p.toUri()));
+	// }
+	//
+	// if (rangeHeader == null) {
+	// // No Range => full file
+	// return ResponseEntity.ok().eTag(eTag).header(HttpHeaders.CONTENT_LENGTH,
+	// size)
+	// .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" +
+	// fm.getName() + "\"")
+	// .header(HttpHeaders.CONTENT_TYPE, mime.toString()).body(new
+	// UrlResource(p.toUri()));
+	// }
+	//
+	// List<HttpRange> ranges = HttpRange.parseRanges(rangeHeader);
+	// if (ranges.isEmpty()) {
+	// return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+	// .header(HttpHeaders.CONTENT_RANGE, "bytes */" +
+	// fm.getSizeInBytes()).eTag(eTag).build();
+	// }
+	//
+	// if (ranges.size() == 1) {
+	// // Single range
+	// HttpRange r = ranges.get(0);
+	// long start = r.getRangeStart(fm.getSizeInBytes());
+	// long end = r.getRangeEnd(fm.getSizeInBytes());
+	// long len = end - start + 1;
+	//
+	// InputStream is = Files.newInputStream(p);
+	// is.skip(start);
+	// InputStream limited = new RangeInputStream(is, len);
 	//// InputStream limited = new ThrottledInputStream(is, len, 1024 * 100); // 100
 	/// KB/s throttle
 
-//
-//			return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).eTag(eTag)
-//					.header(HttpHeaders.CONTENT_LENGTH, String.valueOf(len))
-//					.header(HttpHeaders.CONTENT_RANGE, String.format("bytes %d-%d/%d", start, end, fm.getSizeInBytes()))
-//					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fm.getName() + "\"")
-//					.header(HttpHeaders.CONTENT_TYPE, mime.toString()).body(new InputStreamResource(limited));
-//		}
-//
-//		// Multi-range
-//		String boundary = UUID.randomUUID().toString();
-//
-//		StreamingResponseBody responseBody = outputStream -> {
-//			for (HttpRange r : ranges) {
-//				long start = r.getRangeStart(fm.getSizeInBytes());
-//				long end = r.getRangeEnd(fm.getSizeInBytes());
-//				long len = end - start + 1;
-//
-//				outputStream.write(("--" + boundary + "\r\n").getBytes());
-//				outputStream.write(("Content-Type: " + mime + "\r\n").getBytes());
-//				outputStream.write(
-//						("Content-Range: bytes " + start + "-" + end + "/" + fm.getSizeInBytes() + "\r\n").getBytes());
-//				outputStream.write(("\r\n").getBytes());
-//
-//				try (InputStream is = Files.newInputStream(p)) {
-//					is.skip(start);
-//					InputStream limited = new RangeInputStream(is, len);
-//					copy(limited, outputStream);
-	//// InputStream throttled = new ThrottledInputStream(is, len, 1024 * 100L);
-	//// copy(throttled, outputStream); copyRange(is, outputStream, len);
-//				}
-//				outputStream.write(("\r\n").getBytes());
-//			}
-//			outputStream.write(("--" + boundary + "--\r\n").getBytes());
-//		};
-//
-//		return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).eTag(eTag)
-//				.header(HttpHeaders.CONTENT_TYPE, "multipart/byteranges; boundary=" + boundary).body(responseBody);
-//	}
+	//
+	// return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).eTag(eTag)
+	// .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(len))
+	// .header(HttpHeaders.CONTENT_RANGE, String.format("bytes %d-%d/%d", start,
+	// end, fm.getSizeInBytes()))
+	// .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" +
+	// fm.getName() + "\"")
+	// .header(HttpHeaders.CONTENT_TYPE, mime.toString()).body(new
+	// InputStreamResource(limited));
+	// }
+	//
+	// // Multi-range
+	// String boundary = UUID.randomUUID().toString();
+	//
+	// StreamingResponseBody responseBody = outputStream -> {
+	// for (HttpRange r : ranges) {
+	// long start = r.getRangeStart(fm.getSizeInBytes());
+	// long end = r.getRangeEnd(fm.getSizeInBytes());
+	// long len = end - start + 1;
+	//
+	// outputStream.write(("--" + boundary + "\r\n").getBytes());
+	// outputStream.write(("Content-Type: " + mime + "\r\n").getBytes());
+	// outputStream.write(
+	// ("Content-Range: bytes " + start + "-" + end + "/" + fm.getSizeInBytes() +
+	// "\r\n").getBytes());
+	// outputStream.write(("\r\n").getBytes());
+	//
+	// try (InputStream is = Files.newInputStream(p)) {
+	// is.skip(start);
+	// InputStream limited = new RangeInputStream(is, len);
+	// copy(limited, outputStream);
+	//// InputStream throttled = new ThrottledInputStream(is, len, 1024 * 100L); /
+	/// copy(throttled, outputStream); copyRange(is, outputStream, len);
+	// }
+	// outputStream.write(("\r\n").getBytes());
+	// }
+	// outputStream.write(("--" + boundary + "--\r\n").getBytes());
+	// };
+	//
+	// return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).eTag(eTag)
+	// .header(HttpHeaders.CONTENT_TYPE, "multipart/byteranges; boundary=" +
+	// boundary).body(responseBody);
+	// }
 
 	@GetMapping("/download")
 	public ResponseEntity<Resource> download(@RequestParam(required = false) String filecode,
@@ -452,13 +519,13 @@ public class FileController {
 		return "\"" + Integer.toHexString(value.hashCode()) + "\"";
 	}
 
-//	private void copy(InputStream in, OutputStream out) throws IOException {
-//		byte[] buffer = new byte[8192];
-//		int read;
-//		while ((read = in.read(buffer)) != -1) {
-//			out.write(buffer, 0, read);
-//			out.flush();
-//		}
-//	}
+	// private void copy(InputStream in, OutputStream out) throws IOException {
+	// byte[] buffer = new byte[8192];
+	// int read;
+	// while ((read = in.read(buffer)) != -1) {
+	// out.write(buffer, 0, read);
+	// out.flush();
+	// }
+	// }
 
 }
