@@ -32,8 +32,11 @@ import lombok.extern.log4j.Log4j2;
 @Service
 public class FileService {
 
-//	Present Working Directory - The directory from where java -jar was called to run the Application
+	// Present Working Directory - The directory from where java -jar was called to
+	// run the Application
 	private final Path pwd;
+
+	private final Path data;
 
 	private final Path appDir;
 
@@ -41,7 +44,7 @@ public class FileService {
 
 	private MessageDigest digest;
 
-//	FILE CODE - FILE META
+	// FILE CODE - FILE META
 	private final LinkedHashMap<String, FileMeta> localFiles;
 
 	private final Comparator<FileMeta> modifiedDate = Comparator.comparingLong(FileMeta::getLastModifiedEpoch)
@@ -51,7 +54,9 @@ public class FileService {
 
 		pwd = Path.of(System.getProperty("user.dir")).toAbsolutePath();
 
-		appDir = createFolder(pwd.resolve("resource-for-sync-app"));
+		data = createFolder(pwd.resolve("data"));
+
+		appDir = createFolder(data.resolve("resource-for-sync-app"));
 
 		base64Encoder = Base64.getUrlEncoder().withoutPadding();
 
@@ -92,95 +97,97 @@ public class FileService {
 
 		return listDirectory(null);
 
-//		try {
-//			Files.walk(appDir) // NOW SUPPORT SUB DIRECTORY ACCESS
-//					// .list(syncDir) OLD METHOD FOR SINGLE DIRECTORY ACCESS
-//					.filter(Files::isRegularFile).forEach(path -> {
-//
-//						String name = path.getFileName().toString();
-//
-//						BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
-//						long size = attrs.size();
-//						FileTime time = attrs.lastModifiedTime();
-//
-//						FileMeta fm = new FileMeta();
-//						fm.setName(name);
-//						fm.setRelativePath(base.relativize(path).toString());
-//						try {
-//							fm.setLastModifiedEpoch(Files.getLastModifiedTime(path).toMillis());
-//						} catch (IOException e) {
-//							e.printStackTrace();
-//						}
-//						fm.setLastModified(new Date(fm.getLastModifiedEpoch()).toString());
-//						fm.setPath(path);
-//
-//						String urlSafeFilename = new String(base64Encoder.encode(getHashLength8(name)));
-//
-//						if (Files.isDirectory(path)) {
-//							fm.setDirectory(true);
-//
-//							fm.setUrl("");
-//							fm.setSize("-");
-//						} else {
-//							fm.setDirectory(false);
-//
-//							String downloadLink = "/download?filecode=" + urlSafeFilename;
-//
-//							fm.setCode(urlSafeFilename);
-//							fm.setUrl(downloadLink);
-//
-//							long size = 0;
-//							try {
-//								size = Files.size(path);
-//							} catch (IOException e) {
-//								e.printStackTrace();
-//							}
-//							fm.setSize(friendlyFileSize(size));
-//							fm.setSizeInBytes(size);
-//
-//							MediaType mime = MediaTypeFactory.getMediaType(name)
-//									.orElse(MediaType.APPLICATION_OCTET_STREAM);
-//
-//							fm.setFileType(mime);
-//						}
-//
-//						result.add(fm);
-//
-//						File f = path.toFile();
-//
-//						String urlSafeFilename = new String(base64Encoder.encode(getHashLength8(f)));
-//
-//						String downloadLink = "/download?filecode=" + urlSafeFilename;
-		//// String downloadLink = "/resource?filecode=" + urlSafeFilename; String
-		//// downloadLink = "/part?filecode=" + urlSafeFilename;
-//
-//						MediaType mime = MediaTypeFactory.getMediaType(f.getName())
-//								.orElse(MediaType.APPLICATION_OCTET_STREAM);
-//
-		//// if (MediaType.APPLICATION_OCTET_STREAM.equals(mime)) {
-		//// 
-		/// }
-//
-//						String name = path.getFileName().toString();
-//
-//						FileMeta fm = new FileMeta(downloadLink, urlSafeFilename, f.getName(),
-//								syncDir.relativize(path.getParent()).toString(), friendlyFileSize(f.length()),
-//								new Date(f.lastModified()).toString(), f.length(), f.lastModified(), mime, path);
-//
-//						localFiles.put(urlSafeFilename, fm);
-//						files.add(fm);
-//					});
-//
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//			System.err.println("Failed to read file from file system.");
-//		}
-//
-//		files.sort(modifiedDate);
-//
-//		if (log.isDebugEnabled()) {
-//			files.forEach(log::debug);
-//		}
+		// try {
+		// Files.walk(appDir) // NOW SUPPORT SUB DIRECTORY ACCESS
+		// // .list(syncDir) OLD METHOD FOR SINGLE DIRECTORY ACCESS
+		// .filter(Files::isRegularFile).forEach(path -> {
+		//
+		// String name = path.getFileName().toString();
+		//
+		// BasicFileAttributes attrs = Files.readAttributes(path,
+		// BasicFileAttributes.class);
+		// long size = attrs.size();
+		// FileTime time = attrs.lastModifiedTime();
+		//
+		// FileMeta fm = new FileMeta();
+		// fm.setName(name);
+		// fm.setRelativePath(base.relativize(path).toString());
+		// try {
+		// fm.setLastModifiedEpoch(Files.getLastModifiedTime(path).toMillis());
+		// } catch (IOException e) {
+		// e.printStackTrace();
+		// }
+		// fm.setLastModified(new Date(fm.getLastModifiedEpoch()).toString());
+		// fm.setPath(path);
+		//
+		// String urlSafeFilename = new
+		// String(base64Encoder.encode(getHashLength8(name)));
+		//
+		// if (Files.isDirectory(path)) {
+		// fm.setDirectory(true);
+		//
+		// fm.setUrl("");
+		// fm.setSize("-");
+		// } else {
+		// fm.setDirectory(false);
+		//
+		// String downloadLink = "/download?filecode=" + urlSafeFilename;
+		//
+		// fm.setCode(urlSafeFilename);
+		// fm.setUrl(downloadLink);
+		//
+		// long size = 0;
+		// try {
+		// size = Files.size(path);
+		// } catch (IOException e) {
+		// e.printStackTrace();
+		// }
+		// fm.setSize(friendlyFileSize(size));
+		// fm.setSizeInBytes(size);
+		//
+		// MediaType mime = MediaTypeFactory.getMediaType(name)
+		// .orElse(MediaType.APPLICATION_OCTET_STREAM);
+		//
+		// fm.setFileType(mime);
+		// }
+		//
+		// result.add(fm);
+		//
+		// File f = path.toFile();
+		//
+		// String urlSafeFilename = new String(base64Encoder.encode(getHashLength8(f)));
+		//
+		// String downloadLink = "/download?filecode=" + urlSafeFilename;
+		//// String downloadLink = "/resource?filecode=" + urlSafeFilename; String /
+		/// downloadLink = "/part?filecode=" + urlSafeFilename;
+		//
+		// MediaType mime = MediaTypeFactory.getMediaType(f.getName())
+		// .orElse(MediaType.APPLICATION_OCTET_STREAM);
+		//
+		//// if (MediaType.APPLICATION_OCTET_STREAM.equals(mime)) { / }
+		//
+		// String name = path.getFileName().toString();
+		//
+		// FileMeta fm = new FileMeta(downloadLink, urlSafeFilename, f.getName(),
+		// syncDir.relativize(path.getParent()).toString(),
+		// friendlyFileSize(f.length()),
+		// new Date(f.lastModified()).toString(), f.length(), f.lastModified(), mime,
+		// path);
+		//
+		// localFiles.put(urlSafeFilename, fm);
+		// files.add(fm);
+		// });
+		//
+		// } catch (IOException e) {
+		// e.printStackTrace();
+		// System.err.println("Failed to read file from file system.");
+		// }
+		//
+		// files.sort(modifiedDate);
+		//
+		// if (log.isDebugEnabled()) {
+		// files.forEach(log::debug);
+		// }
 	}
 
 	public List<FileMeta> listDirectory(String relativePath) {
@@ -226,7 +233,7 @@ public class FileService {
 					fm.setDirectory(true);
 
 					fm.setFileType("");
-//					TODO Set Folder Zip Download URL
+					// TODO Set Folder Zip Download URL
 					fm.setUrl("");
 					fm.setSize("-");
 				} else {
@@ -255,8 +262,8 @@ public class FileService {
 		}
 
 		// folders first
-//		result.sort(Comparator.comparing(FileMeta::isDirectory).reversed().thenComparing(FileMeta::getName,
-//				String.CASE_INSENSITIVE_ORDER));
+		// result.sort(Comparator.comparing(FileMeta::isDirectory).reversed().thenComparing(FileMeta::getName,
+		// String.CASE_INSENSITIVE_ORDER));
 		result.sort(
 				Comparator.comparing(FileMeta::isDirectory).reversed().thenComparing(FileMeta::getLastModifiedEpoch));
 
@@ -308,7 +315,8 @@ public class FileService {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		result.sort(Comparator.comparing(FileMeta::isDirectory).reversed().thenComparing(FileMeta::getLastModifiedEpoch));
+		result.sort(
+				Comparator.comparing(FileMeta::isDirectory).reversed().thenComparing(FileMeta::getLastModifiedEpoch));
 		return result;
 	}
 
@@ -366,30 +374,31 @@ public class FileService {
 		return new byte[] {};
 	}
 
-//	public String getHash(File f) {
-//		try {
-//			if (this.digest == null)
-//				this.digest = MessageDigest.getInstance("SHA3-256");
-//
-//			final byte[] hashbytes = digest.digest(f.getName().getBytes(StandardCharsets.UTF_8));
-//
-//			return bytesToHex(hashbytes);
-//		} catch (Exception e) {
-//			log.error(e);
-//		}
-//		return "";
-//	}
+	// public String getHash(File f) {
+	// try {
+	// if (this.digest == null)
+	// this.digest = MessageDigest.getInstance("SHA3-256");
+	//
+	// final byte[] hashbytes =
+	// digest.digest(f.getName().getBytes(StandardCharsets.UTF_8));
+	//
+	// return bytesToHex(hashbytes);
+	// } catch (Exception e) {
+	// log.error(e);
+	// }
+	// return "";
+	// }
 
-//	private String bytesToHex(byte[] hash) {
-//	StringBuilder hexString = new StringBuilder(2 * hash.length);
-//	for (int i = 0; i < hash.length; i++) {
-//		String hex = Integer.toHexString(0xff & hash[i]);
-//		if (hex.length() == 1) {
-//			hexString.append('0');
-//		}
-//		hexString.append(hex);
-//	}
-//	return hexString.toString();
-//}
+	// private String bytesToHex(byte[] hash) {
+	// StringBuilder hexString = new StringBuilder(2 * hash.length);
+	// for (int i = 0; i < hash.length; i++) {
+	// String hex = Integer.toHexString(0xff & hash[i]);
+	// if (hex.length() == 1) {
+	// hexString.append('0');
+	// }
+	// hexString.append(hex);
+	// }
+	// return hexString.toString();
+	// }
 
 }

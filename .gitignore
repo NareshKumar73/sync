@@ -36,6 +36,7 @@ build/
 .theia/
 
 ### MY LIST
+data/
 sync-resource/
 resource-for-sync-app/
 resource-for-sync-app-private/

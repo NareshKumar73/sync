@@ -1,16 +1,12 @@
 package com.source.open.util;
 
-import java.io.IOException;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,7 +17,6 @@ import org.springframework.web.client.RestClient;
 
 import com.source.open.payload.FileListJson;
 
-import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
@@ -40,8 +35,6 @@ public class NetworkUtil {
 		this.serverPort = serverPort;
 		client = RestClient.create();
 	}
-
-
 
 	public Map<String, Boolean> getLocalIpList() {
 		if (localIpList.isEmpty()) {
@@ -121,7 +114,6 @@ public class NetworkUtil {
 		return ipMap;
 	}
 
-
 //	public FileListJson fetchFileList(String url) {
 //
 //		return WebClient
@@ -169,19 +161,19 @@ public class NetworkUtil {
 //private final ConcurrentLinkedQueue<String> syncServers = new ConcurrentLinkedQueue<>();
 
 //public void doSomething() {
-////Map<String, CompletableFuture<Integer>> response = new HashMap<>();
+//// Map<String, CompletableFuture<Integer>> response = new HashMap<>();
 //Map<String, Mono<HttpStatusCode>> response = new HashMap<>();
 //
-////SEND ECHO TO ALL FOUND IP
+//// SEND ECHO TO ALL FOUND IP
 //for (Map.Entry<String, Integer> entry : activeNodes.entrySet()) {
 //
 //String url = "http://" + entry.getKey() + ":" + entry.getValue();
 //
-////response.put(url, pingServer(url));
+//// response.put(url, pingServer(url));
 //response.put(url, pingServerReactively(url));
 //}
 //
-////IF ANY IP RETURN 200 THEN PUT IT IN THE ONLINE SERVER LIST
+//// IF ANY IP RETURN 200 THEN PUT IT IN THE ONLINE SERVER LIST
 //syncServers.clear();
 //
 //for (Map.Entry<String, Mono<HttpStatusCode>> entry : response.entrySet()) {
@@ -189,17 +181,11 @@ public class NetworkUtil {
 //	syncServers.add(entry.getKey());
 //}
 //
-////for (Map.Entry<String, CompletableFuture<Integer>> entry : response.entrySet()) {
-////Integer status = 404;
-////try {
-////	status = entry.getValue().get();
-////} catch (InterruptedException | ExecutionException e) {
-////	e.printStackTrace();
-////}
-////
-////if (status == 200)
-////	syncServers.add(entry.getKey());
-////}
+//// for (Map.Entry<String, CompletableFuture<Integer>> entry :
+/// response.entrySet()) { /Integer status = 404; /try { / status =
+/// entry.getValue().get(); /} catch (InterruptedException | ExecutionException
+/// e) { / e.printStackTrace(); /} / /if (status == 200) /
+/// syncServers.add(entry.getKey()); /}
 //
 //System.out.println(syncServers);
 //}
@@ -302,7 +288,7 @@ public class NetworkUtil {
 //.thenApply(HttpResponse::body)
 //.thenAccept(responseBody -> {
 //	try {
-////		THIS CODE SHOULD BE MORE PERFORMANT
+//// THIS CODE SHOULD BE MORE PERFORMANT
 //		Files.copy(responseBody, dest, StandardCopyOption.REPLACE_EXISTING);
 //	} catch (IOException e) {
 //		e.printStackTrace();

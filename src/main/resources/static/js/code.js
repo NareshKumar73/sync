@@ -266,7 +266,7 @@ async function loadConflicts() {
         container.innerHTML += `
             <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
                 <div>
-                    <span class="d-block fw-bold text-light">${path}</span>
+                    <span class="d-block fw-bold text-light">${meta.name} <small class="text-secondary">(${path})</small></span>
                     <span class="text-muted">Remote Size: ${meta.size} | Remote Date: ${meta.lastModified}</span>
                 </div>
                 <button class="btn btn-sm btn-outline-warning" onclick="alert('To resolve, delete local file and sync again.')">Resolve</button>
