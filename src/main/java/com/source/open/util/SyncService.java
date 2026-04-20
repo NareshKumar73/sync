@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
@@ -36,9 +37,10 @@ public class SyncService {
     // A map to store conflicts: key is file relative path, value is remote FileMeta
     private final ConcurrentHashMap<String, FileMeta> syncConflicts = new ConcurrentHashMap<>();
 
-    @Scheduled(fixedDelay = 3600000)
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.HOURS)
     public void autoSync() {
-        if (!isAutoSyncEnabled) return;
+        if (!isAutoSyncEnabled)
+            return;
         log.info("Starting scheduled auto-sync...");
         triggerSync();
     }
@@ -46,7 +48,7 @@ public class SyncService {
     public void setAutoSync(boolean enabled) {
         this.isAutoSyncEnabled = enabled;
     }
-    
+
     public boolean isAutoSyncEnabled() {
         return this.isAutoSyncEnabled;
     }
@@ -54,7 +56,7 @@ public class SyncService {
     public void triggerSync() {
         List<InstanceNode> nodes = nodeRepository.findAll();
         List<FileMeta> localFiles = fs.listDirectoryRecursive();
-        
+
         // Use relative path + name as key for local files to easily find matches
         Map<String, FileMeta> localFilesMap = localFiles.stream()
                 .collect(Collectors.toMap(f -> f.getRelativePath(), f -> f));
@@ -62,13 +64,14 @@ public class SyncService {
         for (InstanceNode node : nodes) {
             try {
                 String baseUrl = "http://" + node.getIpAddress() + ":" + node.getPort();
-                
+
                 // test connection
-                ResponseEntity<String> pingResponse = restClient.get().uri(baseUrl + "/api/ping").retrieve().toEntity(String.class);
+                ResponseEntity<String> pingResponse = restClient.get().uri(baseUrl + "/api/ping").retrieve()
+                        .toEntity(String.class);
                 if (!pingResponse.getStatusCode().is2xxSuccessful()) {
                     continue;
                 }
-                
+
                 node.setIsWorking(true);
                 node.setLastActive(LocalDateTime.now());
                 nodeRepository.save(node);
@@ -93,7 +96,7 @@ public class SyncService {
     private void processRemoteFiles(String baseUrl, List<FileMeta> remoteFiles, Map<String, FileMeta> localFilesMap) {
         for (FileMeta remote : remoteFiles) {
             String relativePath = remote.getRelativePath();
-            
+
             if (remote.isDirectory()) {
                 Path dirPath = fs.getAppDir().resolve(relativePath);
                 if (!Files.exists(dirPath)) {
@@ -105,15 +108,16 @@ public class SyncService {
                 }
                 continue;
             }
-            
+
             FileMeta local = localFilesMap.get(relativePath);
-            
+
             if (local == null) {
                 // We don't have it, download it
                 downloadFile(baseUrl, remote);
             } else {
                 // We have it, check size and modified date
-                if (local.getSizeInBytes() != remote.getSizeInBytes() || local.getLastModifiedEpoch() < remote.getLastModifiedEpoch()) {
+                if (local.getSizeInBytes() != remote.getSizeInBytes()
+                        || local.getLastModifiedEpoch() < remote.getLastModifiedEpoch()) {
                     // Conflict found. Do not overwrite. Add to conflicts.
                     syncConflicts.put(relativePath, remote);
                     log.info("Conflict found for file: {}. Ignoring remote file.", relativePath);
@@ -125,11 +129,11 @@ public class SyncService {
     private void downloadFile(String baseUrl, FileMeta remote) {
         String downloadUrl = baseUrl + remote.getUrl();
         Path dest = fs.getAppDir().resolve(remote.getRelativePath());
-        
+
         try {
             // Ensure parent directory exists
             Files.createDirectories(dest.getParent());
-            
+
             restClient.get()
                     .uri(downloadUrl)
                     .exchange((request, response) -> {

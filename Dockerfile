@@ -1,9 +1,8 @@
-FROM eclipse-temurin:25.0.2_10-jre-alpine
+FROM eclipse-temurin:25.0.2_10-jre-alpine-3.22
 WORKDIR /app
 
-# For offline deployment, we assume the JAR is already built on the host system 
-# using 'mvn clean package' (or similar) and exists in the target directory. 
-# This avoids downloading maven dependencies during the docker build.
+RUN mkdir -p /app/data/tmp
+
 COPY target/sync-0.0.5.jar app.jar
 
 EXPOSE 9005

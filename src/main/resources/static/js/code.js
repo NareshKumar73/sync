@@ -21,11 +21,17 @@ function sortFiles() {
 
     items.sort(function(a, b) {
         if (sortBy === 'name') {
-            return a.getAttribute('data-name').localeCompare(b.getAttribute('data-name'));
+            return a.getAttribute('data-name').toLowerCase().localeCompare(b.getAttribute('data-name').toLowerCase());
+        } else if (sortBy === 'name-desc') {
+            return b.getAttribute('data-name').toLowerCase().localeCompare(a.getAttribute('data-name').toLowerCase());
         } else if (sortBy === 'date') {
             return parseInt(b.getAttribute('data-date')) - parseInt(a.getAttribute('data-date'));
+        } else if (sortBy === 'date-asc') {
+            return parseInt(a.getAttribute('data-date')) - parseInt(b.getAttribute('data-date'));
         } else if (sortBy === 'size') {
             return parseInt(b.getAttribute('data-size')) - parseInt(a.getAttribute('data-size'));
+        } else if (sortBy === 'size-asc') {
+            return parseInt(a.getAttribute('data-size')) - parseInt(b.getAttribute('data-size'));
         }
     });
 
@@ -273,4 +279,50 @@ async function loadConflicts() {
             </div>
         `;
     }
+}
+
+// System IPs and QR Code functions
+async function showSystemIps() {
+    try {
+        const res = await fetch('/ip/system');
+        const ipMap = await res.json();
+        const tbody = document.getElementById('ipTableBody');
+        tbody.innerHTML = '';
+        
+        for (const [nic, ip] of Object.entries(ipMap)) {
+            tbody.innerHTML += `
+                <tr>
+                    <td class="fw-medium">${nic}</td>
+                    <td>${ip}</td>
+                </tr>
+            `;
+        }
+        new bootstrap.Modal(document.getElementById('ipModal')).show();
+    } catch (error) {
+        console.error("Failed to fetch system IPs", error);
+        alert("Failed to fetch system IPs.");
+    }
+}
+
+let qrcodeObj = null;
+
+function showQrCode() {
+    const currentUrl = window.location.href;
+    const qrContainer = document.getElementById('qrcode');
+    
+    if (!qrcodeObj) {
+        qrcodeObj = new QRCode(qrContainer, {
+            text: currentUrl,
+            width: 200,
+            height: 200,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    } else {
+        qrcodeObj.clear();
+        qrcodeObj.makeCode(currentUrl);
+    }
+    
+    new bootstrap.Modal(document.getElementById('qrModal')).show();
 }

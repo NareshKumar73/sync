@@ -29,6 +29,12 @@
                 <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#networkModal">
                     <i class="bi bi-router text-secondary"></i> Network
                 </button>
+                <button class="btn btn-surface btn-sm" onclick="showSystemIps()" title="System IPs">
+                    <i class="bi bi-pc-display-horizontal text-secondary"></i> IPs
+                </button>
+                <button class="btn btn-surface btn-sm" onclick="showQrCode()" title="QR Code">
+                    <i class="bi bi-qr-code text-secondary"></i> QR
+                </button>
                 <button class="btn btn-premium btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
                     <i class="bi bi-cloud-upload"></i> Upload
                 </button>
@@ -64,8 +70,11 @@
                 <span class="text-secondary small fw-medium">Sort by:</span> 
                 <select id="sortSelect" class="form-select surface-input form-select-sm shadow-none" style="width: auto;" onchange="sortFiles()">
                     <option value="name">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
                     <option value="date">Date (Newest)</option>
+                    <option value="date-asc">Date (Oldest)</option>
                     <option value="size">Size (Largest)</option>
+                    <option value="size-asc">Size (Smallest)</option>
                 </select>
             </div>
         </div>
@@ -231,11 +240,54 @@
         </div>
     </div>
 
+    <!-- System IPs Modal -->
+    <div class="modal fade" id="ipModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content surface-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-semibold text-primary"><i class="bi bi-pc-display-horizontal me-2" style="color: var(--accent);"></i> System IPs</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="table-responsive surface-panel p-2">
+                        <table class="table table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Network Card</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ipTableBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div class="modal fade" id="qrModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content surface-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-semibold text-primary"><i class="bi bi-qr-code me-2" style="color: var(--accent);"></i> Page QR Code</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 d-flex justify-content-center bg-white">
+                    <div id="qrcode"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Pass context path to JS -->
     <script th:inline="javascript">
         const currentRelativePath = /*[[${pwd}]]*/ '';
     </script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
     <script src="../static/js/code.js" th:src="@{/js/code.js}"></script>
 </body>

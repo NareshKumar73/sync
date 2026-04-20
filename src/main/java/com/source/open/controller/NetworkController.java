@@ -51,6 +51,11 @@ public class NetworkController {
 		return ResponseEntity.ok(nu.fetchLocalIpList());
 	}
 
+	@GetMapping("/ip/system")
+	public ResponseEntity<Map<String, String>> getSystemIpMap() {
+		return ResponseEntity.ok(nu.getSystemIpMap());
+	}
+
 	@GetMapping("/api/nodes")
 	public ResponseEntity<List<InstanceNode>> getNodes() {
 		return ResponseEntity.ok(nodeRepository.findAll());

@@ -56,7 +56,7 @@ public class FileService {
 
 		data = createFolder(pwd.resolve("data"));
 
-		appDir = createFolder(data.resolve("resource-for-sync-app"));
+		appDir = createFolder(data.resolve("shared"));
 
 		base64Encoder = Base64.getUrlEncoder().withoutPadding();
 
