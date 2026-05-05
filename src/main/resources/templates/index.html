@@ -35,6 +35,12 @@
                 <button class="btn btn-surface btn-sm" onclick="showQrCode()" title="QR Code">
                     <i class="bi bi-qr-code text-secondary"></i> QR
                 </button>
+                <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#chatModal" title="Chat">
+                    <i class="bi bi-chat-dots text-secondary"></i> Chat
+                </button>
+                <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#clipboardModal" title="Clipboard">
+                    <i class="bi bi-clipboard text-secondary"></i> Clipboard
+                </button>
                 <button class="btn btn-premium btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
                     <i class="bi bi-cloud-upload"></i> Upload
                 </button>
@@ -100,7 +106,7 @@
                 </div>
 
                 <div id="file-list-container">
-                    <div th:each="file : ${local.files}" class="file-item" th:data-name="${file.name.toLowerCase()}" th:data-date="${file.lastModifiedEpoch}" th:data-size="${file.sizeInBytes}">
+                    <div th:each="file : ${local.files}" class="file-item" th:data-name="${file.name.toLowerCase()}" th:data-date="${file.lastModifiedEpoch}" th:data-size="${file.sizeInBytes}" th:data-is-dir="${file.directory}">
                         <div class="d-flex align-items-center">
                             <input class="form-check-input file-check me-3 shadow-none" type="checkbox" th:if="${!file.directory}" th:field="*{filecode}" th:value="${file.code}" onchange="updateSelection()">
                             <div class="file-icon">
@@ -118,12 +124,16 @@
                         </div>
 
                         <div class="d-flex gap-2">
-                            <button th:if="${!file.directory}" type="button" class="btn btn-surface btn-sm rounded-circle shadow-none" th:onclick="openPreview([[${file.url}]], [[${file.name}]], [[${file.fileType}]])" title="Preview">
+                            <button th:if="${!file.directory}" type="button" class="btn btn-surface btn-sm rounded-circle shadow-none" 
+                                    th:data-url="${file.url}" th:data-name="${file.name}" th:data-type="${file.fileType}"
+                                    onclick="openPreview(this.getAttribute('data-url'), this.getAttribute('data-name'), this.getAttribute('data-type'))" title="Preview">
                                 <i class="bi bi-eye text-secondary"></i>
                             </button>
-                            <a th:if="${!file.directory}" th:href="${file.url}" class="btn btn-surface btn-sm rounded-circle shadow-none" title="Download"> 
+                            <button th:if="${!file.directory}" type="button" class="btn btn-surface btn-sm rounded-circle shadow-none" 
+                                    th:data-url="${file.url}" th:data-name="${file.name}" th:data-size="${file.sizeInBytes}"
+                                    onclick="startDownloadInUI(this.getAttribute('data-url'), this.getAttribute('data-name'), this.getAttribute('data-size'))" title="Download"> 
                                 <i class="bi bi-download" style="color: var(--accent);"></i>
-                            </a>
+                            </button>
                             <a th:if="${file.directory}" th:href="@{/zip-folder(path=${file.relativePath})}" class="btn btn-surface btn-sm rounded-circle shadow-none" title="Download Folder ZIP"> 
                                 <i class="bi bi-file-zip" style="color: var(--accent);"></i>
                             </a>
@@ -240,6 +250,37 @@
         </div>
     </div>
 
+    <!-- Download Modal -->
+    <div class="modal fade" id="downloadModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content surface-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-semibold text-primary"><i class="bi bi-cloud-download me-2" style="color: var(--accent);"></i> Downloading File</h5>
+                    <button type="button" class="btn-close shadow-none" onclick="cancelDownload()" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="downloadProgressContainer" class="bg-light p-3 rounded-3 border">
+                        <div class="d-flex justify-content-between small mb-2 fw-medium text-secondary">
+                            <span id="downloadStatusText">Downloading...</span>
+                            <span id="downloadPercentage" style="color: var(--accent);">0%</span>
+                        </div>
+                        <div class="progress mb-2">
+                            <div id="downloadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span id="downloadDownloaded">0 MB / 0 MB</span>
+                            <span id="downloadSpeed">0 MB/s</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="pauseResumeBtn" class="btn btn-warning" onclick="toggleDownloadPause()"><i class="bi bi-pause me-1"></i> Pause</button>
+                    <button type="button" class="btn btn-danger" onclick="cancelDownload()" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- System IPs Modal -->
     <div class="modal fade" id="ipModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -282,12 +323,86 @@
         </div>
     </div>
 
+    <!-- Chat Modal -->
+    <div class="modal fade" id="chatModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content surface-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-semibold text-primary"><i class="bi bi-chat-dots me-2" style="color: var(--accent);"></i> Network Chat</h5>
+                    <button type="button" class="btn btn-sm btn-outline-secondary ms-auto me-2" onclick="toggleChatSettings()"><i class="bi bi-gear"></i> Profile</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger me-2" onclick="clearAllChats()">Clear</button>
+                    <button type="button" class="btn-close shadow-none m-0" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 d-flex flex-column" style="height: 60vh;">
+                    <!-- Chat Profile Settings (Hidden by default) -->
+                    <div id="chatProfileSettings" class="d-none mb-3 p-3 border rounded bg-light">
+                        <h6 class="text-primary mb-3">Edit Profile</h6>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="small text-muted">Display Name</label>
+                                <input type="text" id="chatProfileName" class="form-control form-control-sm" placeholder="Anonymous">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small text-muted">Avatar URL</label>
+                                <input type="text" id="chatProfileAvatar" class="form-control form-control-sm" placeholder="https://example.com/avatar.png">
+                            </div>
+                        </div>
+                        <div class="mt-2 text-end">
+                            <button class="btn btn-sm btn-premium" onclick="saveChatProfile()">Save Profile</button>
+                        </div>
+                    </div>
+                    
+                    <div id="chatMessages" class="flex-grow-1 overflow-auto mb-3 p-3" style="border-radius: 8px; background-color: #f8f9fa;">
+                        <!-- Messages go here -->
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="chatInput" class="form-control surface-input shadow-none" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                        <button class="btn btn-premium" onclick="sendChatMessage()"><i class="bi bi-send"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clipboard Modal -->
+    <div class="modal fade" id="clipboardModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content surface-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-semibold text-primary"><i class="bi bi-clipboard me-2" style="color: var(--accent);"></i> Shared Clipboard</h5>
+                    <button type="button" class="btn btn-sm btn-outline-danger ms-auto me-2" onclick="clearAllClipboards()">Clear History</button>
+                    <button type="button" class="btn-close shadow-none m-0" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 d-flex flex-column" style="height: 60vh;">
+                    <div id="clipboardItems" class="flex-grow-1 overflow-auto mb-3 surface-panel p-3" style="border-radius: 8px;">
+                        <!-- Clipboard items go here -->
+                    </div>
+                    <div class="input-group">
+                        <textarea id="clipboardInput" class="form-control surface-input shadow-none" placeholder="Paste text here..." rows="2"></textarea>
+                        <button class="btn btn-premium" onclick="sendClipboardItem()"><i class="bi bi-plus-circle"></i> Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drag & Drop Overlay -->
+    <div id="drop-zone-overlay" class="d-none position-fixed top-0 start-0 w-100 h-100 z-3 d-flex justify-content-center align-items-center" style="background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);">
+        <div class="text-white text-center p-5 rounded-4" style="border: 3px dashed var(--accent); background: rgba(255,255,255,0.1);">
+            <i class="bi bi-cloud-upload display-1 mb-3 d-block" style="color: var(--accent);"></i>
+            <h2 class="fw-bold">Drop files here to upload</h2>
+            <p class="text-light opacity-75">Files will be uploaded to the current folder</p>
+        </div>
+    </div>
+
     <!-- Pass context path to JS -->
     <script th:inline="javascript">
         const currentRelativePath = /*[[${pwd}]]*/ '';
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
     <script src="../static/js/code.js" th:src="@{/js/code.js}"></script>
 </body>

@@ -210,7 +210,8 @@ public class FileController {
 			@RequestParam("filename") String filename,
 			@RequestParam("relativePath") String relativePath,
 			@RequestParam("chunkIndex") int chunkIndex,
-			@RequestParam("totalChunks") int totalChunks) {
+			@RequestParam("totalChunks") int totalChunks,
+			@RequestParam("uuid") String uuid) {
 
 		try {
 			// Resolve target directory
@@ -220,25 +221,49 @@ public class FileController {
 			}
 			Files.createDirectories(targetDir);
 
-			Path targetFile = targetDir.resolve(filename);
-			Path tempFile = targetDir.resolve(filename + ".part");
+			// Use a dedicated temp directory for the chunks of this specific file
+			Path tempDir = targetDir.resolve(".temp_" + uuid);
+			Files.createDirectories(tempDir);
+			Path chunkFile = tempDir.resolve(String.valueOf(chunkIndex));
 
-			// If it's the first chunk, delete any existing temp file
-			if (chunkIndex == 0) {
-				Files.deleteIfExists(tempFile);
+			// Save chunk (overwrite if exists, enabling resuming)
+			Files.copy(file.getInputStream(), chunkFile, StandardCopyOption.REPLACE_EXISTING);
+
+			// Check if all chunks are received
+			boolean allChunksPresent = true;
+			for (int i = 0; i < totalChunks; i++) {
+				if (!Files.exists(tempDir.resolve(String.valueOf(i)))) {
+					allChunksPresent = false;
+					break;
+				}
 			}
 
-			// Append chunk data
-			Files.write(tempFile, file.getBytes(),
-					StandardOpenOption.CREATE,
-					StandardOpenOption.APPEND);
-
-			// If it's the last chunk, rename to final filename
-			if (chunkIndex == totalChunks - 1) {
-				Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+			if (allChunksPresent) {
+				// Synchronize on the unique file UUID to prevent concurrent merges
+				synchronized (uuid.intern()) {
+					Path targetFile = targetDir.resolve(filename);
+					if (!Files.exists(targetFile) && Files.exists(tempDir)) {
+						try (OutputStream out = Files.newOutputStream(targetFile, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+							for (int i = 0; i < totalChunks; i++) {
+								Path cFile = tempDir.resolve(String.valueOf(i));
+								Files.copy(cFile, out);
+							}
+						}
+						// Clean up temp directory
+						try {
+							for (int i = 0; i < totalChunks; i++) {
+								Files.deleteIfExists(tempDir.resolve(String.valueOf(i)));
+							}
+							Files.deleteIfExists(tempDir);
+						} catch (Exception ignored) {}
+					}
+				}
+				log.info("Upload completed for file: {}", filename);
 				return ResponseEntity.ok().body(Map.of("message", "Upload complete", "completed", true));
 			}
 
+			int percentage = (int) (((double) (chunkIndex + 1) / totalChunks) * 100);
+			log.info("Upload in progress for file: {} - {}%", filename, percentage);
 			return ResponseEntity.ok().body(Map.of("message", "Chunk received", "completed", false));
 		} catch (IOException e) {
 			log.error("Error uploading chunk", e);

@@ -41,6 +41,35 @@
 						</form>
 					</div>
 				</div>
+
+				<!-- Transfer Dashboard -->
+				<div class="mt-4" id="transfer-dashboard" style="display: none;">
+					<div class="card shadow-sm border-0 rounded-4">
+						<div class="card-body">
+							<h5 class="fw-bold mb-3">Transfer Progress</h5>
+							<div class="d-flex justify-content-between mb-2 small text-muted fw-bold">
+								<span id="speed-label"><i class="bi bi-speedometer2"></i> Speed: <span id="speed" class="text-dark">0 MB/s</span></span>
+								<span id="eta-label"><i class="bi bi-clock-history"></i> ETA: <span id="eta" class="text-dark">0s</span></span>
+								<span id="file-count-label"><i class="bi bi-files"></i> Files: <span id="file-count" class="text-dark">0/0</span></span>
+							</div>
+							<div class="progress mb-3" style="height: 12px; border-radius: 6px;">
+								<div id="global-progress" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+							</div>
+							<div class="d-flex gap-2">
+								<button id="pause-btn" class="btn btn-warning btn-sm fw-bold"><i class="bi bi-pause-fill"></i> Pause</button>
+								<button id="resume-btn" class="btn btn-success btn-sm fw-bold" disabled><i class="bi bi-play-fill"></i> Resume</button>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Server Cards -->
+				<div class="mt-5" id="server-cards-container" style="display: none;">
+					<h5 class="fw-bold mb-3">Available Network Servers</h5>
+					<div class="row g-3" id="server-cards">
+						<!-- Populated via JS -->
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -48,24 +77,155 @@
 	<script src="../static/dropzone/dropzone.js" th:src="@{/dropzone/dropzone.js}"></script>
 	<script>
 		Dropzone.autoDiscover = false;
+
+		let isPaused = false;
+		let pausedFiles = [];
+		let lastTime = Date.now();
+		let lastBytes = 0;
+		let speedFilter = 0;
+
 		let uploadzone = new Dropzone("#air-drop", {
+			url: "/upload/chunk",
 			maxFilesize: null,
 			filesizeBase: 1024,
+			chunking: true,
+			forceChunking: true,
+			chunkSize: 5 * 1024 * 1024, // 5MB chunks
+			retryChunks: true,
+			retryChunksLimit: 3,
+			params: function (files, xhr, chunk) {
+				if (chunk) {
+					// Create a consistent UUID based on file properties so we can resume across reloads
+					let fileUuid = btoa(chunk.file.name + chunk.file.size + chunk.file.lastModified).replace(/[^a-zA-Z0-9]/g, '');
+					return {
+						filename: chunk.file.name,
+						relativePath: chunk.file.webkitRelativePath || "", // or empty string
+						chunkIndex: chunk.index,
+						totalChunks: chunk.file.upload.totalChunkCount,
+						uuid: fileUuid
+					};
+				}
+			},
 			// 	dictDefaultMessage: "",
 			createImageThumbnails: false, // Disabling thumbs speeds up large file adding
 			init: function () {
+				this.on("addedfile", () => {
+					document.getElementById('transfer-dashboard').style.display = 'block';
+					updateFileCount();
+				});
+
 				this.on("uploadprogress", (file, progress) => {
 					if (file.previewElement) {
 						let progressElement = file.previewElement.querySelector("[data-dz-uploadprogress]")
 						progressElement.style.width = progress + "%";
-//						progressElement.innerHTML = Math.floor(progress) + "%";
 					}
 				});
+				
+				this.on("totaluploadprogress", (progress, totalBytes, totalBytesSent) => {
+					let now = Date.now();
+					let timeDiff = (now - lastTime) / 1000;
+					
+					if (timeDiff > 0.5) {
+						let bytesDiff = totalBytesSent - lastBytes;
+						if (bytesDiff >= 0) {
+							let speed = bytesDiff / timeDiff; // bytes per sec
+							speedFilter = speedFilter * 0.7 + speed * 0.3; // low-pass filter
+							
+							let speedMB = (speedFilter / (1024 * 1024)).toFixed(2);
+							document.getElementById('speed').innerText = speedMB + " MB/s";
+							
+							if (speedFilter > 0) {
+								let etaSeconds = (totalBytes - totalBytesSent) / speedFilter;
+								if (etaSeconds < 0) etaSeconds = 0;
+								let etaFormatted = Math.round(etaSeconds) + "s";
+								if (etaSeconds > 60) {
+									etaFormatted = Math.floor(etaSeconds / 60) + "m " + Math.round(etaSeconds % 60) + "s";
+								}
+								document.getElementById('eta').innerText = etaFormatted;
+							} else {
+								document.getElementById('eta').innerText = "-";
+							}
+						}
+						
+						lastTime = now;
+						lastBytes = totalBytesSent;
+					}
+					
+					document.getElementById('global-progress').style.width = progress + "%";
+				});
+
 				this.on("success", (file, response) => {
 					file.previewElement.classList.add("dz-success");
+					updateFileCount();
+				});
+				
+				this.on("canceled", (file) => {
+					updateFileCount();
+				});
+
+				this.on("error", (file, errorMessage) => {
+					if (!file.accepted) return;
+					// Basic handling for network loss if not handled by retryChunks
+					console.error("Upload error:", errorMessage);
 				});
 			}
 		});
+
+		function updateFileCount() {
+			let total = uploadzone.files.length;
+			let completed = uploadzone.getFilesWithStatus(Dropzone.SUCCESS).length;
+			document.getElementById('file-count').innerText = `${completed}/${total}`;
+		}
+
+		// Pause & Resume Logic
+		document.getElementById('pause-btn').addEventListener('click', () => {
+			isPaused = true;
+			document.getElementById('pause-btn').disabled = true;
+			document.getElementById('resume-btn').disabled = false;
+			
+			let activeFiles = uploadzone.getUploadingFiles();
+			activeFiles.forEach(file => {
+				uploadzone.cancelUpload(file);
+				pausedFiles.push(file);
+			});
+		});
+
+		document.getElementById('resume-btn').addEventListener('click', () => {
+			isPaused = false;
+			document.getElementById('resume-btn').disabled = true;
+			document.getElementById('pause-btn').disabled = false;
+			
+			pausedFiles.forEach(file => {
+				file.status = Dropzone.ADDED;
+				uploadzone.enqueueFile(file);
+			});
+			pausedFiles = [];
+		});
+
+		// Fetch and display server cards
+		fetch('/api/nodes').then(res => res.json()).then(nodes => {
+			let container = document.getElementById('server-cards');
+			if (nodes && nodes.length > 0) {
+				document.getElementById('server-cards-container').style.display = 'block';
+				nodes.forEach(node => {
+					let nodeName = node.deviceName || 'Network Node';
+					let card = `
+						<div class="col-md-6 col-lg-4">
+							<div class="card shadow-sm border-0 rounded-4 h-100">
+								<div class="card-body text-center">
+									<h6 class="fw-bold mb-2"><i class="bi bi-pc-display me-2 text-primary"></i>${nodeName}</h6>
+									<p class="text-muted small mb-3">${node.ipAddress}:${node.port}</p>
+									<a href="http://${node.ipAddress}:${node.port}/d" target="_blank" class="btn btn-outline-primary btn-sm w-100 rounded-pill">
+										<i class="bi bi-box-arrow-up-right"></i> Open Download Page
+									</a>
+								</div>
+							</div>
+						</div>
+					`;
+					container.innerHTML += card;
+				});
+			}
+		}).catch(err => console.error("Could not fetch network nodes", err));
 	</script>
 </body>
 
