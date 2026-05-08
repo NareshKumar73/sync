@@ -1,15 +1,85 @@
 // Utility and existing functions
-function filterFiles() {
-    let input = document.getElementById('searchInput');
-    let filter = input.value.toLowerCase();
-    let items = document.getElementsByClassName('file-item');
+async function filterFiles() {
+    const input = document.getElementById('searchInput');
+    const scope = document.getElementById('searchScope');
+    if(!input) return;
+    
+    const filter = input.value.toLowerCase();
+    
+    const items = document.getElementsByClassName('file-item');
     for (let i = 0; i < items.length; i++) {
-        let name = items[i].getAttribute('data-name');
-        if (name.indexOf(filter) > -1) {
-            items[i].style.display = "flex";
+        const name = items[i].getAttribute('data-name').toLowerCase();
+        if (name.includes(filter)) {
+            items[i].style.display = 'flex';
         } else {
-            items[i].style.display = "none";
+            items[i].style.display = 'none';
         }
+    }
+    
+    // Handle Global Search
+    const globalContainer = document.getElementById('global-search-results');
+    const globalResults = document.getElementById('global-search-container');
+    
+    if (scope && scope.value === 'global' && filter.length >= 2) {
+        if (globalContainer) globalContainer.classList.remove('d-none');
+        if (globalResults) globalResults.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-primary"></div><small class="ms-2 text-secondary">Searching nodes...</small></div>';
+        
+        try {
+            const res = await fetch('/api/nodes');
+            const nodes = await res.json();
+            const activeNodes = nodes.filter(n => n.isWorking);
+            
+            if (activeNodes.length === 0) {
+                globalResults.innerHTML = '<div class="alert alert-secondary small py-2">No active network nodes found.</div>';
+                return;
+            }
+            
+            const searchPromises = activeNodes.map(node => 
+                fetch(`http://${node.ipAddress}:${node.port}/files/recursive`)
+                    .then(r => r.json())
+                    .then(data => ({ node, files: data.files || [] }))
+                    .catch(e => ({ node, error: true }))
+            );
+            
+            const results = await Promise.all(searchPromises);
+            
+            let globalHtml = '';
+            let totalGlobalFound = 0;
+            
+            results.forEach(result => {
+                if (result.error || !result.files) return;
+                
+                const matchedFiles = result.files.filter(f => f.name.toLowerCase().includes(filter));
+                if (matchedFiles.length > 0) {
+                    globalHtml += `<div class="mb-3 p-3 bg-white rounded-3 border">
+                        <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
+                            <span class="fw-bold text-dark"><i class="bi bi-hdd-network me-2 text-primary"></i>Node: ${result.node.ipAddress}</span>
+                            <a href="http://${result.node.ipAddress}:${result.node.port}/" target="_blank" class="badge bg-primary text-decoration-none">Open Node</a>
+                        </div>`;
+                        
+                    matchedFiles.forEach(f => {
+                        let iconClass = f.directory ? 'bi-folder-fill text-warning' : 'bi-file-earmark-text text-info';
+                        globalHtml += `<div class="d-flex justify-content-between align-items-center py-1">
+                            <span class="small text-secondary"><i class="bi ${iconClass} me-2"></i>${f.relativePath || f.name}</span>
+                            <a href="http://${result.node.ipAddress}:${result.node.port}/resource?filecode=${f.fileCode}" class="btn btn-sm btn-light py-0" title="Download"><i class="bi bi-download"></i></a>
+                        </div>`;
+                        totalGlobalFound++;
+                    });
+                    globalHtml += `</div>`;
+                }
+            });
+            
+            if (totalGlobalFound > 0) {
+                globalResults.innerHTML = globalHtml;
+            } else {
+                globalResults.innerHTML = `<div class="alert alert-secondary small py-2">No matches found on remote nodes.</div>`;
+            }
+            
+        } catch(e) {
+            globalResults.innerHTML = '<div class="alert alert-danger small py-2">Error connecting to network nodes.</div>';
+        }
+    } else {
+        if (globalContainer) globalContainer.classList.add('d-none');
     }
 }
 
@@ -217,7 +287,8 @@ async function loadNodes() {
                 <td>${node.port}</td>
                 <td class="small text-muted">${lastActive}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteNode(${node.id})"><i class="bi bi-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteNode(${node.id})" title="Delete"><i class="bi bi-trash"></i></button>
+                    <a href="http://${node.ipAddress}:${node.port}/" target="_blank" class="btn btn-sm btn-outline-success border-0 ms-1" title="Browse Remote Files"><i class="bi bi-box-arrow-up-right"></i></a>
                 </td>
             </tr>
         `;
@@ -360,6 +431,12 @@ function showQrCode() {
     }
     
     new bootstrap.Modal(document.getElementById('qrModal')).show();
+}
+
+function copyCurrentUrl() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+        alert("Link copied to clipboard!");
+    });
 }
 
 // Resumable Download UI Logic
@@ -787,3 +864,221 @@ function copyToClipboard(btn, text) {
         }, 2000);
     });
 }
+
+// Theme & Background Management
+let petalInterval = null;
+
+function managePetals(themeName) {
+    if (themeName === 'girl') {
+        if (!petalInterval) {
+            petalInterval = setInterval(createPetal, 400);
+        }
+    } else {
+        if (petalInterval) {
+            clearInterval(petalInterval);
+            petalInterval = null;
+        }
+        document.querySelectorAll('.cherry-petal').forEach(p => p.remove());
+    }
+}
+
+function createPetal() {
+    const petal = document.createElement('div');
+    petal.className = 'cherry-petal';
+    petal.style.left = Math.random() * 100 + 'vw';
+    petal.style.animationDuration = (Math.random() * 3 + 4) + 's';
+    petal.style.opacity = Math.random() * 0.5 + 0.3;
+    
+    // Slight size variations
+    const size = Math.random() * 10 + 10;
+    petal.style.width = size + 'px';
+    petal.style.height = size + 'px';
+    
+    document.body.appendChild(petal);
+    setTimeout(() => {
+        if(petal.parentNode) petal.remove();
+    }, 8000);
+}
+
+function changeTheme(themeName) {
+    document.documentElement.setAttribute('data-theme', themeName);
+    localStorage.setItem('syncTheme', themeName);
+    managePetals(themeName);
+}
+
+function applyCustomBg() {
+    let urlInput = document.getElementById('bgImageUrl').value.trim();
+    let fileInput = document.getElementById('bgImageFile').files[0];
+    let sizeSelect = document.getElementById('bgSizeSelect').value; // format: size_position_repeat
+    
+    let parts = sizeSelect.split('_');
+    let bgSize = parts[0];
+    let bgPos = parts[1];
+    let bgRepeat = parts[2];
+
+    const saveAndApply = (bgUrl) => {
+        // Warning: LocalStorage has a 5MB limit. Base64 images might exceed this.
+        // We catch quota errors if the user uploads a large image.
+        try {
+            localStorage.setItem('syncBgImage', bgUrl);
+            localStorage.setItem('syncBgSize', bgSize);
+            localStorage.setItem('syncBgPos', bgPos);
+            localStorage.setItem('syncBgRepeat', bgRepeat);
+        } catch (e) {
+            console.warn("Could not save background to localStorage, possibly too large.", e);
+            alert("Image is too large to save permanently. It will only apply for this session.");
+        }
+        
+        document.documentElement.style.setProperty('--body-bg-image', `url('${bgUrl}')`);
+        document.documentElement.style.setProperty('--body-bg-size', bgSize);
+        document.documentElement.style.setProperty('--body-bg-position', bgPos);
+        document.documentElement.style.setProperty('--body-bg-repeat', bgRepeat);
+        
+        // Hide modal
+        let modalEl = document.getElementById('bgSettingsModal');
+        if (modalEl) {
+            let modal = bootstrap.Modal.getInstance(modalEl);
+            if(modal) modal.hide();
+        }
+    };
+
+    if (fileInput) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            saveAndApply(e.target.result);
+        };
+        reader.readAsDataURL(fileInput);
+    } else if (urlInput) {
+        saveAndApply(urlInput);
+    } else {
+        alert("Please provide an image URL or upload a file.");
+    }
+}
+
+function clearCustomBg() {
+    localStorage.removeItem('syncBgImage');
+    localStorage.removeItem('syncBgSize');
+    localStorage.removeItem('syncBgPos');
+    localStorage.removeItem('syncBgRepeat');
+    
+    document.documentElement.style.removeProperty('--body-bg-image');
+    document.documentElement.style.removeProperty('--body-bg-size');
+    document.documentElement.style.removeProperty('--body-bg-position');
+    document.documentElement.style.removeProperty('--body-bg-repeat');
+    
+    document.getElementById('bgImageUrl').value = '';
+    document.getElementById('bgImageFile').value = '';
+    
+    let modalEl = document.getElementById('bgSettingsModal');
+    if (modalEl) {
+        let modal = bootstrap.Modal.getInstance(modalEl);
+        if(modal) modal.hide();
+    }
+}
+
+function initThemeAndBg() {
+    let savedTheme = localStorage.getItem('syncTheme') || 'light';
+    changeTheme(savedTheme);
+    
+    let savedBg = localStorage.getItem('syncBgImage');
+    if (savedBg) {
+        document.documentElement.style.setProperty('--body-bg-image', `url('${savedBg}')`);
+        document.documentElement.style.setProperty('--body-bg-size', localStorage.getItem('syncBgSize') || 'cover');
+        document.documentElement.style.setProperty('--body-bg-position', localStorage.getItem('syncBgPos') || 'center');
+        document.documentElement.style.setProperty('--body-bg-repeat', localStorage.getItem('syncBgRepeat') || 'no-repeat');
+    }
+}
+
+async function runSpeedTest(mode) {
+    const size = document.getElementById('speedTestSize').value;
+    const speedEl = document.getElementById('speedTestSpeed');
+    const statusEl = document.getElementById('speedTestStatus');
+    const resultBox = document.getElementById('speedTestResult');
+    const btnDown = document.getElementById('btnTestDownload');
+    const btnUp = document.getElementById('btnTestUpload');
+    
+    resultBox.classList.remove('d-none');
+    speedEl.innerText = '-- MB/s';
+    btnDown.disabled = true;
+    btnUp.disabled = true;
+    
+    if (mode === 'download') {
+        statusEl.innerText = `Testing Download (${size}MB)...`;
+        
+        const startTime = Date.now();
+        try {
+            const response = await fetch(`/api/speedtest/download?sizeMB=${size}`);
+            const blob = await response.blob();
+            const endTime = Date.now();
+            
+            const durationSec = (endTime - startTime) / 1000;
+            const sizeInBytes = blob.size;
+            const speedMbps = (sizeInBytes / 1024 / 1024) / durationSec;
+            
+            speedEl.innerText = speedMbps.toFixed(2) + ' MB/s';
+            statusEl.innerText = 'Download Test Complete';
+        } catch (e) {
+            speedEl.innerText = 'Error';
+            statusEl.innerText = 'Failed to connect';
+        }
+    } else if (mode === 'upload') {
+        statusEl.innerText = `Generating dummy data...`;
+        
+        // Generate random bytes for the file
+        const totalBytes = size * 1024 * 1024;
+        const array = new Uint8Array(totalBytes);
+        const blob = new Blob([array], {type: 'application/octet-stream'});
+        const formData = new FormData();
+        formData.append('file', blob, 'speedtest.dummy');
+        
+        statusEl.innerText = `Testing Upload (${size}MB)...`;
+        const startTime = Date.now();
+        
+        try {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/speedtest/upload', true);
+            
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const durationSec = (Date.now() - startTime) / 1000;
+                    if(durationSec > 0.5) {
+                        const speedMbps = (e.loaded / 1024 / 1024) / durationSec;
+                        speedEl.innerText = speedMbps.toFixed(2) + ' MB/s';
+                    }
+                }
+            };
+            
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const durationSec = (Date.now() - startTime) / 1000;
+                    const speedMbps = (totalBytes / 1024 / 1024) / durationSec;
+                    speedEl.innerText = speedMbps.toFixed(2) + ' MB/s';
+                    statusEl.innerText = 'Upload Test Complete';
+                } else {
+                    speedEl.innerText = 'Error';
+                    statusEl.innerText = 'Server rejected upload';
+                }
+                btnDown.disabled = false;
+                btnUp.disabled = false;
+            };
+            
+            xhr.onerror = function() {
+                speedEl.innerText = 'Error';
+                statusEl.innerText = 'Network error';
+                btnDown.disabled = false;
+                btnUp.disabled = false;
+            };
+            
+            xhr.send(formData);
+            return; // Exit early since XHR is async and buttons are handled
+        } catch (e) {
+            speedEl.innerText = 'Error';
+            statusEl.innerText = 'Failed to execute';
+        }
+    }
+    
+    btnDown.disabled = false;
+    btnUp.disabled = false;
+}
+
+initThemeAndBg();

@@ -11,14 +11,32 @@
 	<link rel="stylesheet" href="../static/css/design.css" th:href="@{/css/design.css}">
 </head>
 
-<body>
+<body class="custom-bg-active">
 
-	<nav class="navbar-custom mb-4">
+	<nav class="navbar-custom mb-4 glass-nav py-3 border-bottom">
 		<div class="container d-flex justify-content-between align-items-center">
-			<a class="text-decoration-none fw-bold text-dark fs-5" th:href="@{/}">
+			<a class="text-decoration-none fw-bold fs-5" style="color: var(--text-primary);" th:href="@{/}">
 				<i class="bi bi-arrow-left-short"></i> Back to Files
 			</a>
-			<span class="badge bg-primary rounded-pill">Upload Mode</span>
+            <div class="d-flex align-items-center gap-3">
+                <!-- Theme Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-surface btn-sm dropdown-toggle" type="button" id="themeDropdownUpload" data-bs-toggle="dropdown" aria-expanded="false" title="Theme Settings">
+                        <i class="bi bi-palette text-secondary default-icon"></i>
+                        <i class="bi bi-balloon-heart text-danger rabbit-icon"></i> Theme
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 surface-panel" aria-labelledby="themeDropdownUpload">
+                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('light')"><i class="bi bi-sun me-2 text-warning"></i>Light</a></li>
+                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('dark')"><i class="bi bi-moon-stars me-2 text-primary"></i>Dark</a></li>
+                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('girl')"><i class="bi bi-balloon-heart me-2 text-danger"></i>Girl Mode</a></li>
+                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('genz')"><i class="bi bi-lightning-charge me-2 text-info"></i>Gen Z Mode</a></li>
+                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('glass')"><i class="bi bi-phone me-2 text-secondary"></i>Glassmorphism</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#bgSettingsModal"><i class="bi bi-image me-2 text-success"></i>Wallpaper Settings</a></li>
+                    </ul>
+                </div>
+			    <span class="badge bg-primary rounded-pill">Upload Mode</span>
+            </div>
 		</div>
 	</nav>
 
@@ -73,6 +91,42 @@
 			</div>
 		</div>
 	</div>
+
+    <!-- Background Settings Modal -->
+    <div class="modal fade" id="bgSettingsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content surface-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-semibold text-primary"><i class="bi bi-image me-2" style="color: var(--accent);"></i> Wallpaper Settings</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary fw-medium small">Image URL or Base64</label>
+                        <input type="text" id="bgImageUrl" class="form-control surface-input shadow-none" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary fw-medium small">Or Upload Local Image</label>
+                        <input type="file" id="bgImageFile" class="form-control surface-input shadow-none" accept="image/*">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-medium small">Sizing Option</label>
+                        <select id="bgSizeSelect" class="form-select surface-input shadow-none">
+                            <option value="cover_center_no-repeat">Fill Screen</option>
+                            <option value="contain_center_no-repeat">Fit to Screen</option>
+                            <option value="100% 100%_center_no-repeat">Stretch</option>
+                            <option value="auto_center_no-repeat">Center</option>
+                            <option value="auto_top left_repeat">Tile</option>
+                        </select>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-surface text-danger" onclick="clearCustomBg()"><i class="bi bi-trash me-1"></i> Clear</button>
+                        <button class="btn btn-premium" onclick="applyCustomBg()"><i class="bi bi-check2 me-1"></i> Apply Background</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 	<script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
 	<script src="../static/dropzone/dropzone.js" th:src="@{/dropzone/dropzone.js}"></script>
 	<script>

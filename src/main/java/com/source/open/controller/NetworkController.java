@@ -17,6 +17,10 @@ import com.source.open.util.InstanceNodeRepository;
 import com.source.open.util.SyncService;
 import com.source.open.payload.FileMeta;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
 import lombok.RequiredArgsConstructor;
 
@@ -147,5 +151,29 @@ public class NetworkController {
 	public ResponseEntity<ApiMessage> resolveConflict(@RequestParam String relativePath, @RequestParam String baseUrl) {
 		syncService.resolveConflict(relativePath, baseUrl);
 		return ResponseEntity.ok(new ApiMessage("Conflict resolved.", true));
+	}
+
+	@GetMapping("/api/speedtest/download")
+	public ResponseEntity<StreamingResponseBody> speedTestDownload(@RequestParam(defaultValue = "10") int sizeMB) {
+		int totalBytes = sizeMB * 1024 * 1024;
+		StreamingResponseBody stream = out -> {
+			byte[] buffer = new byte[8192];
+			int written = 0;
+			while (written < totalBytes) {
+				int toWrite = Math.min(buffer.length, totalBytes - written);
+				out.write(buffer, 0, toWrite);
+				written += toWrite;
+			}
+		};
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
+				.header(HttpHeaders.CONTENT_LENGTH, String.valueOf(totalBytes))
+				.body(stream);
+	}
+
+	@PostMapping("/api/speedtest/upload")
+	public ResponseEntity<ApiMessage> speedTestUpload(@RequestParam("file") MultipartFile file) {
+		// Spring automatically buffers to temp and cleans up the multipart file after request completes.
+		return ResponseEntity.ok(new ApiMessage("Upload speed test successful, temp data discarded.", true));
 	}
 }

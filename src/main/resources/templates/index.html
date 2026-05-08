@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="../static/css/design.css" th:href="@{/css/design.css}">
 </head>
 
-<body>
+<body class="custom-bg-active">
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg glass-nav sticky-top z-3">
         <div class="container d-flex justify-content-between align-items-center">
@@ -41,6 +41,27 @@
                 <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#clipboardModal" title="Clipboard">
                     <i class="bi bi-clipboard text-secondary"></i> Clipboard
                 </button>
+                <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#speedTestModal" title="Speed Test">
+                    <i class="bi bi-speedometer2 text-secondary"></i> Speed Test
+                </button>
+                
+                <!-- Theme Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-surface btn-sm dropdown-toggle" type="button" id="themeDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Theme Settings">
+                        <i class="bi bi-palette text-secondary default-icon"></i>
+                        <i class="bi bi-balloon-heart text-danger rabbit-icon"></i> Theme
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 surface-panel" aria-labelledby="themeDropdown">
+                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('light')"><i class="bi bi-sun me-2 text-warning"></i>Light</a></li>
+                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('dark')"><i class="bi bi-moon-stars me-2 text-primary"></i>Dark</a></li>
+                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('girl')"><i class="bi bi-balloon-heart me-2 text-danger"></i>Girl Mode</a></li>
+                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('genz')"><i class="bi bi-lightning-charge me-2 text-info"></i>Gen Z Mode</a></li>
+                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('glass')"><i class="bi bi-phone me-2 text-secondary"></i>Glassmorphism</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#bgSettingsModal"><i class="bi bi-image me-2 text-success"></i>Wallpaper Settings</a></li>
+                    </ul>
+                </div>
+
                 <button class="btn btn-premium btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
                     <i class="bi bi-cloud-upload"></i> Upload
                 </button>
@@ -68,9 +89,12 @@
 
         <!-- Toolbar -->
         <div class="toolbar-container d-flex flex-wrap gap-3 align-items-center justify-content-between mb-4 surface-panel p-3 animate-fade-in" th:unless="${local.totalElements == 0}" style="animation-delay: 0.2s;">
-            <div class="input-group" style="max-width: 350px;">
-                <span class="input-group-text surface-input border-end-0"><i class="bi bi-search"></i></span> 
-                <input type="text" id="searchInput" class="form-control surface-input border-start-0 shadow-none" placeholder="Search files..." onkeyup="filterFiles()">
+            <div class="input-group" style="max-width: 400px;">
+                <select id="searchScope" class="form-select surface-input shadow-none" style="max-width: 110px;" onchange="filterFiles()">
+                    <option value="local">Local</option>
+                    <option value="global">Global</option>
+                </select>
+                <input type="text" id="searchInput" class="form-control surface-input shadow-none" placeholder="Search files..." onkeyup="filterFiles()">
             </div>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-secondary small fw-medium">Sort by:</span> 
@@ -110,7 +134,8 @@
                         <div class="d-flex align-items-center">
                             <input class="form-check-input file-check me-3 shadow-none" type="checkbox" th:if="${!file.directory}" th:field="*{filecode}" th:value="${file.code}" onchange="updateSelection()">
                             <div class="file-icon">
-                                <i th:class="${file.directory} ? 'bi bi-folder-fill text-warning' : 'bi bi-file-earmark-text'" th:style="${!file.directory ? 'color: var(--accent);' : ''}"></i>
+                                <i th:class="${file.directory} ? 'bi bi-folder-fill text-warning default-icon' : 'bi bi-file-earmark-text default-icon'" th:style="${!file.directory ? 'color: var(--accent);' : ''}"></i>
+                                <i th:class="${file.directory} ? 'bi bi-suit-heart-fill text-danger rabbit-icon' : 'bi bi-star-fill text-warning rabbit-icon'"></i>
                             </div>
                             <div class="file-details">
                                 <a th:if="${file.directory}" th:href="@{/d(path=${file.relativePath})}" class="file-name text-decoration-none" th:text="${file.name}">Folder</a>
@@ -139,6 +164,11 @@
                             </a>
                         </div>
                     </div>
+                </div>
+                
+                <div id="global-search-results" class="mt-4 d-none">
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-globe me-2 text-info"></i>Network Search Results</h6>
+                    <div id="global-search-container"></div>
                 </div>
             </div>
             <input type="hidden" id="file-array" name="fileArray">
@@ -310,14 +340,67 @@
 
     <!-- QR Code Modal -->
     <div class="modal fade" id="qrModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content surface-modal border-0 overflow-hidden shadow-lg">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-5 pb-5 pt-2 text-center">
+                    <div class="mb-4">
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 64px; height: 64px; background-color: var(--accent-light);">
+                            <i class="bi bi-qr-code-scan fs-2" style="color: var(--accent);"></i>
+                        </div>
+                        <h4 class="fw-bold mb-2">Connect Mobile Device</h4>
+                        <p class="text-secondary small mb-0">Scan this QR code with your phone's camera to access this folder directly.</p>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center mb-4">
+                        <div class="p-4 bg-white rounded-4 shadow-sm" style="border: 2px solid var(--border-color);">
+                            <div id="qrcode" class="d-flex justify-content-center"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-surface fw-medium px-4 py-2 w-100" onclick="copyCurrentUrl()">
+                            <i class="bi bi-link-45deg me-1"></i> Copy Direct Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Speed Test Modal -->
+    <div class="modal fade" id="speedTestModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content surface-modal">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-semibold text-primary"><i class="bi bi-qr-code me-2" style="color: var(--accent);"></i> Page QR Code</h5>
+                    <h5 class="modal-title fw-semibold text-primary"><i class="bi bi-speedometer2 me-2" style="color: var(--accent);"></i> LAN/WIFI Speed Test</h5>
                     <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4 d-flex justify-content-center bg-white">
-                    <div id="qrcode"></div>
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-4">
+                        <label class="form-label text-secondary small fw-medium">Payload Size</label>
+                        <select id="speedTestSize" class="form-select surface-input shadow-none w-50 mx-auto text-center">
+                            <option value="10">10 MB</option>
+                            <option value="50">50 MB</option>
+                            <option value="100">100 MB</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-3 mb-4">
+                        <button class="btn btn-surface" onclick="runSpeedTest('download')" id="btnTestDownload">
+                            <i class="bi bi-cloud-arrow-down fs-4 d-block mb-1 text-primary"></i> Download
+                        </button>
+                        <button class="btn btn-surface" onclick="runSpeedTest('upload')" id="btnTestUpload">
+                            <i class="bi bi-cloud-arrow-up fs-4 d-block mb-1 text-success"></i> Upload
+                        </button>
+                    </div>
+                    
+                    <div id="speedTestResult" class="p-3 rounded-3 bg-light border d-none">
+                        <h3 class="mb-0 fw-bold" style="color: var(--accent);" id="speedTestSpeed">-- MB/s</h3>
+                        <small class="text-secondary" id="speedTestStatus">Ready</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -380,6 +463,42 @@
                     <div class="input-group">
                         <textarea id="clipboardInput" class="form-control surface-input shadow-none" placeholder="Paste text here..." rows="2"></textarea>
                         <button class="btn btn-premium" onclick="sendClipboardItem()"><i class="bi bi-plus-circle"></i> Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Settings Modal -->
+    <div class="modal fade" id="bgSettingsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content surface-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-semibold text-primary"><i class="bi bi-image me-2" style="color: var(--accent);"></i> Wallpaper Settings</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary fw-medium small">Image URL or Base64</label>
+                        <input type="text" id="bgImageUrl" class="form-control surface-input shadow-none" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary fw-medium small">Or Upload Local Image</label>
+                        <input type="file" id="bgImageFile" class="form-control surface-input shadow-none" accept="image/*">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-medium small">Sizing Option</label>
+                        <select id="bgSizeSelect" class="form-select surface-input shadow-none">
+                            <option value="cover_center_no-repeat">Fill Screen</option>
+                            <option value="contain_center_no-repeat">Fit to Screen</option>
+                            <option value="100% 100%_center_no-repeat">Stretch</option>
+                            <option value="auto_center_no-repeat">Center</option>
+                            <option value="auto_top left_repeat">Tile</option>
+                        </select>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-surface text-danger" onclick="clearCustomBg()"><i class="bi bi-trash me-1"></i> Clear</button>
+                        <button class="btn btn-premium" onclick="applyCustomBg()"><i class="bi bi-check2 me-1"></i> Apply Background</button>
                     </div>
                 </div>
             </div>
