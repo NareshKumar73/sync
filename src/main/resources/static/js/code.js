@@ -434,9 +434,26 @@ function showQrCode() {
 }
 
 function copyCurrentUrl() {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-        alert("Link copied to clipboard!");
-    });
+    const text = window.location.href;
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Link copied to clipboard!");
+        });
+    } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "absolute";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            alert("Link copied to clipboard!");
+        } catch (error) {
+            console.error("Failed to copy URL", error);
+        }
+        document.body.removeChild(textArea);
+    }
 }
 
 // Resumable Download UI Logic
@@ -802,6 +819,20 @@ async function clearAllChats() {
 // Clipboard Functions
 document.getElementById('clipboardModal')?.addEventListener('show.bs.modal', loadClipboards);
 
+function escapeHtml(unsafe) {
+    return (unsafe || '').toString()
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
+function copyClipboardItem(btn) {
+    const text = decodeURIComponent(btn.getAttribute('data-clipboard'));
+    copyToClipboard(btn, text);
+}
+
 async function loadClipboards() {
     const res = await fetch('/api/clipboard');
     const items = await res.json();
@@ -809,16 +840,18 @@ async function loadClipboards() {
     container.innerHTML = '';
     items.forEach(item => {
         const time = new Date(item.timestamp).toLocaleString();
+        const safeContent = escapeHtml(item.content);
+        const encodedContent = encodeURIComponent(item.content);
         container.innerHTML += `
             <div class="mb-3 p-3 bg-white rounded border">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <small class="text-muted">${item.senderIp || 'Unknown'} - ${time}</small>
+                    <small class="text-muted">${escapeHtml(item.senderIp) || 'Unknown'} - ${time}</small>
                     <div>
-                        <button class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" onclick="copyToClipboard(this, \`${item.content.replace(/`/g, '\\`')}\`)"><i class="bi bi-clipboard"></i> Copy</button>
+                        <button class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" data-clipboard="${encodedContent}" onclick="copyClipboardItem(this)"><i class="bi bi-clipboard"></i> Copy</button>
                         <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteClipboard(${item.id})"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
-                <div class="text-dark" style="white-space: pre-wrap; word-wrap: break-word;">${item.content}</div>
+                <div class="text-dark" style="white-space: pre-wrap; word-wrap: break-word;">${safeContent}</div>
             </div>
         `;
     });
@@ -852,7 +885,7 @@ async function clearAllClipboards() {
 }
 
 function copyToClipboard(btn, text) {
-    navigator.clipboard.writeText(text).then(() => {
+    const onSuccess = () => {
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="bi bi-check2"></i> Copied!';
         btn.classList.replace('btn-outline-secondary', 'btn-success');
@@ -862,7 +895,25 @@ function copyToClipboard(btn, text) {
             btn.classList.replace('btn-success', 'btn-outline-secondary');
             btn.classList.remove('text-white');
         }, 2000);
-    });
+    };
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(onSuccess);
+    } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "absolute";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            onSuccess();
+        } catch (error) {
+            console.error("Failed to copy text", error);
+        }
+        document.body.removeChild(textArea);
+    }
 }
 
 // Theme & Background Management
