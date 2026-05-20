@@ -30,6 +30,7 @@ public class SyncService {
 
     private final FileService fs;
     private final InstanceNodeRepository nodeRepository;
+    private final com.source.open.util.TransferHistoryRepository transferHistoryRepo;
     private final RestClient restClient = RestClient.create();
 
     private boolean isAutoSyncEnabled = false;
@@ -141,6 +142,20 @@ public class SyncService {
                             try (InputStream is = response.getBody()) {
                                 Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
                                 log.info("Downloaded missing file: " + remote.getRelativePath());
+                                
+                                try {
+                                    com.source.open.payload.TransferHistory th = new com.source.open.payload.TransferHistory();
+                                    th.setType("SYNC_JOB");
+                                    th.setFilename(remote.getRelativePath());
+                                    // Extract IP from baseUrl (e.g. "http://192.168.1.10:8080")
+                                    String ip = baseUrl.replace("http://", "").replace("https://", "").split(":")[0];
+                                    th.setIpAddress(ip);
+                                    th.setFileSize(remote.getSizeInBytes());
+                                    th.setTimestamp(LocalDateTime.now());
+                                    transferHistoryRepo.save(th);
+                                } catch (Exception ex) {
+                                    log.error("Failed to log sync transfer history", ex);
+                                }
                             }
                         }
                         return null;

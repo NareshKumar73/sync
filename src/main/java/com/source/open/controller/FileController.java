@@ -61,6 +61,7 @@ public class FileController {
 
 	private final FileService fs;
 	private final com.source.open.util.StorageService storageService;
+	private final com.source.open.util.TransferHistoryRepository transferHistoryRepo;
 
 	@GetMapping("/files")
 	public ResponseEntity<FileListJson> fileList() {
@@ -104,6 +105,8 @@ public class FileController {
 			throw new FileNotFoundException("Please check directory and confirm the file exists.");
 
 		FileSystemResource resource = new FileSystemResource(p);
+
+		logTransfer("MANUAL_DOWNLOAD", fileMeta.getName(), request.getRemoteAddr(), fileMeta.getSizeInBytes());
 
 		return ResponseEntity.ok()
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
@@ -187,7 +190,7 @@ public class FileController {
 
 	// file upload endpoint - support both multiple and single file upload
 	@PostMapping("/upload")
-	public void uploadMultipleFiles(@RequestPart("file") List<MultipartFile> parts) {
+	public void uploadMultipleFiles(@RequestPart("file") List<MultipartFile> parts, HttpServletRequest request) {
 		log.debug("File upload request arrived");
 
 		for (MultipartFile file : parts) {
@@ -195,6 +198,7 @@ public class FileController {
 				Path newFile = fs.getAppDir().resolve(file.getOriginalFilename());
 				try (InputStream in = file.getInputStream()) {
 					Files.copy(in, newFile, StandardCopyOption.REPLACE_EXISTING);
+					logTransfer("MANUAL_UPLOAD", file.getOriginalFilename(), request.getRemoteAddr(), file.getSize());
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -212,7 +216,8 @@ public class FileController {
 			@RequestParam("relativePath") String relativePath,
 			@RequestParam("chunkIndex") int chunkIndex,
 			@RequestParam("totalChunks") int totalChunks,
-			@RequestParam("uuid") String uuid) {
+			@RequestParam("uuid") String uuid,
+			HttpServletRequest request) {
 
 		try {
 			// Resolve target directory
@@ -261,6 +266,10 @@ public class FileController {
 				}
 				storageService.releaseSpace(uuid);
 				log.info("Upload completed for file: {}", filename);
+				try {
+					long size = Files.size(targetDir.resolve(filename));
+					logTransfer("MANUAL_UPLOAD", filename, request.getRemoteAddr(), size);
+				} catch (Exception e) {}
 				return ResponseEntity.ok().body(Map.of("message", "Upload complete", "completed", true));
 			}
 
@@ -427,6 +436,8 @@ public class FileController {
 		// Modern Content-Disposition Builder
 		var contentDisposition = ContentDisposition.attachment().filename(fm.getName()).build();
 
+		logTransfer("MANUAL_DOWNLOAD", fm.getName(), ((ServletWebRequest) request).getRequest().getRemoteAddr(), fm.getSizeInBytes());
+
 		return ResponseEntity.ok()
 				.contentType(MediaTypeFactory.getMediaType(resource).orElse(MediaType.APPLICATION_OCTET_STREAM))
 				.header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString()).lastModified(lastModified)
@@ -436,7 +447,8 @@ public class FileController {
 	@GetMapping("/download/manual")
 	public ResponseEntity<StreamingResponseBody> downloadCustom(@RequestParam(required = false) String filecode,
 			@RequestHeader(value = HttpHeaders.RANGE, required = false) String rangeHeader,
-			@RequestHeader(value = HttpHeaders.IF_RANGE, required = false) String ifRangeHeader) {
+			@RequestHeader(value = HttpHeaders.IF_RANGE, required = false) String ifRangeHeader,
+			HttpServletRequest request) {
 
 		if (filecode == null || filecode.isBlank())
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Filecode required");
@@ -456,6 +468,7 @@ public class FileController {
 
 		// SCENARIO 1: Full File (No Range or Invalid Range)
 		if (ranges.isEmpty()) {
+			logTransfer("MANUAL_DOWNLOAD", fm.getName(), request.getRemoteAddr(), fileSize);
 			return ResponseEntity.ok().eTag(eTag).contentLength(fileSize).contentType(mime)
 					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fm.getName() + "\"")
 					.body(os -> {
@@ -474,6 +487,8 @@ public class FileController {
 			long end = r.getRangeEnd(fileSize);
 			long length = end - start + 1;
 
+			logTransfer("MANUAL_DOWNLOAD", fm.getName(), request.getRemoteAddr(), length);
+
 			return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).eTag(eTag).contentType(mime)
 					.header(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileSize)
 					.header(HttpHeaders.CONTENT_LENGTH, String.valueOf(length))
@@ -486,10 +501,12 @@ public class FileController {
 
 		return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).eTag(eTag)
 				.contentType(MediaType.parseMediaType("multipart/byteranges; boundary=" + boundary)).body(os -> {
+					long totalBytesRequested = 0;
 					for (HttpRange r : ranges) {
 						long start = r.getRangeStart(fileSize);
 						long end = r.getRangeEnd(fileSize);
 						long length = end - start + 1;
+						totalBytesRequested += length;
 
 						// Write Boundary Headers
 						String partHeader = String.format(
@@ -503,6 +520,7 @@ public class FileController {
 						os.write("\r\n".getBytes());
 					}
 					os.write(("--" + boundary + "--\r\n").getBytes());
+					logTransfer("MANUAL_DOWNLOAD", fm.getName(), request.getRemoteAddr(), totalBytesRequested);
 				});
 	}
 
@@ -554,5 +572,19 @@ public class FileController {
 	// out.flush();
 	// }
 	// }
+
+	private void logTransfer(String type, String filename, String ipAddress, long size) {
+		try {
+			com.source.open.payload.TransferHistory th = new com.source.open.payload.TransferHistory();
+			th.setType(type);
+			th.setFilename(filename);
+			th.setIpAddress(ipAddress);
+			th.setFileSize(size);
+			th.setTimestamp(LocalDateTime.now());
+			transferHistoryRepo.save(th);
+		} catch (Exception e) {
+			log.error("Failed to log transfer history", e);
+		}
+	}
 
 }

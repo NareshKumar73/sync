@@ -14,6 +14,8 @@ import com.source.open.payload.FileMeta;
 import com.source.open.payload.FileRequest;
 import com.source.open.util.FileService;
 import com.source.open.util.NetworkUtil;
+import com.source.open.util.TransferHistoryRepository;
+import com.source.open.payload.TransferHistory;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +27,8 @@ public class PageController {
 	private final FileService fs;
 
 	private final NetworkUtil nu;
+
+	private final TransferHistoryRepository transferHistoryRepository;
 
 	@GetMapping({ "/", "/d" })
 	public String browse(@RequestParam(required = false) String path, Model model) {
@@ -43,6 +47,13 @@ public class PageController {
 		model.addAttribute("pwd", path == null ? "" : path);
 
 		return "index";
+	}
+
+	@GetMapping("/history")
+	public String transferHistory(Model model) {
+		List<TransferHistory> historyList = transferHistoryRepository.findAllByOrderByTimestampDesc();
+		model.addAttribute("historyList", historyList);
+		return "history";
 	}
 
 

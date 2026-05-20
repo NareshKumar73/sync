@@ -485,24 +485,95 @@ async function showSystemIps() {
     }
 }
 
-let qrcodeObj = null;
+async function showQrCode() {
+    const qrContainer = document.getElementById('qrCodesContainer');
+    qrContainer.innerHTML = ''; // clear previous QRs
 
-function showQrCode() {
-    const currentUrl = window.location.href;
-    const qrContainer = document.getElementById('qrcode');
-    
-    if (!qrcodeObj) {
-        qrcodeObj = new QRCode(qrContainer, {
-            text: currentUrl,
-            width: 200,
-            height: 200,
+    try {
+        const res = await fetch('/ip/system');
+        const ipMap = await res.json();
+        
+        const port = window.location.port ? ':' + window.location.port : '';
+        const path = window.location.pathname + window.location.search;
+        const protocol = window.location.protocol;
+
+        if (Object.keys(ipMap).length === 0) {
+            throw new Error("No IPs found");
+        }
+
+        let isFirst = true;
+        for (const [nic, ip] of Object.entries(ipMap)) {
+            const url = `${protocol}//${ip}${port}${path}`;
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `carousel-item ${isFirst ? 'active' : ''}`;
+            itemDiv.innerHTML = `
+                <div class="d-flex justify-content-center">
+                    <div class="text-center">
+                        <div class="p-3 bg-white rounded-4 shadow-sm mb-2" style="border: 2px solid var(--border-color);">
+                            <div id="qr-${ip.replace(/\./g, '-')}" class="d-flex justify-content-center"></div>
+                        </div>
+                        <div class="fw-medium text-light">${nic}</div>
+                        <div class="small text-secondary">${ip}</div>
+                    </div>
+                </div>
+            `;
+            qrContainer.appendChild(itemDiv);
+
+            new QRCode(document.getElementById(`qr-${ip.replace(/\./g, '-')}`), {
+                text: url,
+                width: 180,
+                height: 180,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+            isFirst = false;
+        }
+
+        // Hide carousel controls if only one QR code
+        const prevBtn = document.querySelector('#qrCarousel .carousel-control-prev');
+        const nextBtn = document.querySelector('#qrCarousel .carousel-control-next');
+        const numItems = Object.keys(ipMap).length;
+        if (numItems <= 1) {
+            if (prevBtn) prevBtn.style.display = 'none';
+            if (nextBtn) nextBtn.style.display = 'none';
+        } else {
+            if (prevBtn) prevBtn.style.display = '';
+            if (nextBtn) nextBtn.style.display = '';
+        }
+
+    } catch (e) {
+        console.error('Failed to load system IPs for QR codes', e);
+        // Fallback to current URL if fetching IPs fails
+        const url = window.location.href;
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'carousel-item active';
+        itemDiv.innerHTML = `
+            <div class="d-flex justify-content-center">
+                <div class="text-center">
+                    <div class="p-3 bg-white rounded-4 shadow-sm mb-2" style="border: 2px solid var(--border-color);">
+                        <div id="qr-fallback" class="d-flex justify-content-center"></div>
+                    </div>
+                    <div class="fw-medium text-light">Current URL</div>
+                </div>
+            </div>
+        `;
+        qrContainer.appendChild(itemDiv);
+
+        new QRCode(document.getElementById('qr-fallback'), {
+            text: url,
+            width: 180,
+            height: 180,
             colorDark : "#000000",
             colorLight : "#ffffff",
             correctLevel : QRCode.CorrectLevel.H
         });
-    } else {
-        qrcodeObj.clear();
-        qrcodeObj.makeCode(currentUrl);
+
+        const prevBtn = document.querySelector('#qrCarousel .carousel-control-prev');
+        const nextBtn = document.querySelector('#qrCarousel .carousel-control-next');
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
     }
     
     new bootstrap.Modal(document.getElementById('qrModal')).show();
