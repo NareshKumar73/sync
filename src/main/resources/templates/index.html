@@ -29,6 +29,9 @@
                 <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#networkModal">
                     <i class="bi bi-router text-secondary"></i> Network
                 </button>
+                <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#systemModal" title="System Status">
+                    <i class="bi bi-cpu text-secondary"></i> Status
+                </button>
                 <button class="btn btn-surface btn-sm" onclick="showSystemIps()" title="System IPs">
                     <i class="bi bi-pc-display-horizontal text-secondary"></i> IPs
                 </button>
@@ -499,6 +502,89 @@
                     <div class="d-flex justify-content-between">
                         <button class="btn btn-surface text-danger" onclick="clearCustomBg()"><i class="bi bi-trash me-1"></i> Clear</button>
                         <button class="btn btn-premium" onclick="applyCustomBg()"><i class="bi bi-check2 me-1"></i> Apply Background</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status Modal -->
+    <div class="modal fade" id="systemModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content surface-modal">
+                <div class="modal-header border-bottom pb-3">
+                    <h5 class="modal-title fw-bold text-primary"><i class="bi bi-cpu me-2" style="color: var(--accent);"></i> System Dashboard</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <!-- CPU & Memory -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm rounded-4 h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <h6 class="fw-bold mb-0 text-secondary"><i class="bi bi-cpu-fill text-primary me-2"></i>CPU Usage</h6>
+                                        <span id="metric-cpu-text" class="fw-bold" style="color: var(--accent);">0%</span>
+                                    </div>
+                                    <div class="progress" style="height: 10px;">
+                                        <div id="metric-cpu-bar" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm rounded-4 h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <h6 class="fw-bold mb-0 text-secondary"><i class="bi bi-memory text-primary me-2"></i>Memory</h6>
+                                        <span id="metric-mem-text" class="fw-bold text-dark">0 / 0 GB</span>
+                                    </div>
+                                    <div class="progress" style="height: 10px;">
+                                        <div id="metric-mem-bar" class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Network -->
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body">
+                            <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-activity text-primary me-2"></i>Network I/O</h6>
+                            <div class="row text-center">
+                                <div class="col-6 border-end">
+                                    <div class="text-muted small fw-medium mb-1">Download</div>
+                                    <h4 id="metric-net-rx" class="fw-bold text-success mb-0">0 MB/s</h4>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-muted small fw-medium mb-1">Upload</div>
+                                    <h4 id="metric-net-tx" class="fw-bold text-warning mb-0">0 MB/s</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Storage -->
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-body">
+                            <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-hdd-network-fill text-primary me-2"></i>Storage Limits</h6>
+                            
+                            <div class="d-flex justify-content-between mb-1 small fw-medium">
+                                <span class="text-muted">Total Used (Disk + Reserved)</span>
+                                <span id="metric-storage-text" class="fw-bold text-dark">0 GB / 25 GB</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 14px;">
+                                <div id="metric-storage-used" class="progress-bar bg-success" role="progressbar" style="width: 0%" title="Actual Disk Used"></div>
+                                <div id="metric-storage-reserved" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width: 0%" title="Reserved by active uploads"></div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                                <span class="text-secondary small"><i class="bi bi-info-circle me-1"></i>Reserved space prevents concurrent upload overflow.</span>
+                                <span class="badge bg-light text-dark border">
+                                    Available: <span id="metric-storage-remaining" style="color: var(--accent);">0 GB</span>
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

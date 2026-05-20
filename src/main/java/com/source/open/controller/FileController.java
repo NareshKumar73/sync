@@ -60,6 +60,7 @@ import lombok.extern.log4j.Log4j2;
 public class FileController {
 
 	private final FileService fs;
+	private final com.source.open.util.StorageService storageService;
 
 	@GetMapping("/files")
 	public ResponseEntity<FileListJson> fileList() {
@@ -258,6 +259,7 @@ public class FileController {
 						} catch (Exception ignored) {}
 					}
 				}
+				storageService.releaseSpace(uuid);
 				log.info("Upload completed for file: {}", filename);
 				return ResponseEntity.ok().body(Map.of("message", "Upload complete", "completed", true));
 			}

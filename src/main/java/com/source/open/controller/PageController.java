@@ -45,9 +45,6 @@ public class PageController {
 		return "index";
 	}
 
-	@GetMapping("/u")
-	public String upload() {
-		return "upload";
-	}
+
 
 }

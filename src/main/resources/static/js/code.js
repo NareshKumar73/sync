@@ -230,6 +230,19 @@ async function uploadFile(file) {
     
     const fileUuid = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
 
+    try {
+        const reserveRes = await fetch(`/api/storage/reserve?uuid=${fileUuid}&size=${file.size}`, { method: 'POST' });
+        if (!reserveRes.ok) {
+            const err = await reserveRes.json();
+            document.getElementById('uploadStatusText').innerText = `Rejected: ${err.error} (${file.name})`;
+            document.getElementById('uploadStatusText').classList.add('text-danger');
+            return; // Skip this file
+        }
+    } catch (e) {
+        console.error("Storage reservation failed", e);
+        return;
+    }
+
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
         const start = chunkIndex * CHUNK_SIZE;
         const end = Math.min(start + CHUNK_SIZE, file.size);
@@ -259,8 +272,70 @@ async function uploadFile(file) {
             console.error(error);
             document.getElementById('uploadStatusText').innerText = `Failed to upload ${file.name}`;
             document.getElementById('uploadStatusText').classList.add('text-danger');
+            fetch(`/api/storage/release?uuid=${fileUuid}`, { method: 'POST' });
             return; // abort this file
         }
+    }
+}
+
+// System Metrics Fetcher
+let metricsInterval = null;
+const systemModalEl = document.getElementById('systemModal');
+if (systemModalEl) {
+    systemModalEl.addEventListener('show.bs.modal', () => {
+        fetchMetrics();
+        metricsInterval = setInterval(fetchMetrics, 2000);
+    });
+    systemModalEl.addEventListener('hide.bs.modal', () => {
+        clearInterval(metricsInterval);
+    });
+}
+
+async function fetchMetrics() {
+    try {
+        const [sysRes, storageRes] = await Promise.all([
+            fetch('/api/system/metrics'),
+            fetch('/api/storage/status')
+        ]);
+        const sys = await sysRes.json();
+        const storage = await storageRes.json();
+        
+        const cpuText = document.getElementById('metric-cpu-text');
+        if (cpuText) cpuText.innerText = sys.cpu + '%';
+        const cpuBar = document.getElementById('metric-cpu-bar');
+        if (cpuBar) cpuBar.style.width = sys.cpu + '%';
+        
+        const memUsedGB = (sys.memoryUsed / (1024**3)).toFixed(2);
+        const memTotalGB = (sys.memoryTotal / (1024**3)).toFixed(2);
+        const memPercent = (sys.memoryUsed / sys.memoryTotal) * 100;
+        const memText = document.getElementById('metric-mem-text');
+        if (memText) memText.innerText = `${memUsedGB} / ${memTotalGB} GB`;
+        const memBar = document.getElementById('metric-mem-bar');
+        if (memBar) memBar.style.width = memPercent + '%';
+        
+        const rxMB = (sys.networkDownload / (1024**2)).toFixed(2);
+        const txMB = (sys.networkUpload / (1024**2)).toFixed(2);
+        const rxText = document.getElementById('metric-net-rx');
+        if (rxText) rxText.innerText = rxMB + ' MB/s';
+        const txText = document.getElementById('metric-net-tx');
+        if (txText) txText.innerText = txMB + ' MB/s';
+        
+        const limitGB = (storage.limit / (1024**3)).toFixed(2);
+        const usedGB = (storage.used / (1024**3)).toFixed(2);
+        const reservedGB = (storage.reserved / (1024**3)).toFixed(2);
+        const remainingGB = (storage.remaining / (1024**3)).toFixed(2);
+        const totalUsedGB = ((storage.used + storage.reserved) / (1024**3)).toFixed(2);
+        
+        const storageText = document.getElementById('metric-storage-text');
+        if (storageText) storageText.innerText = `${totalUsedGB} GB / ${limitGB} GB`;
+        const storageUsed = document.getElementById('metric-storage-used');
+        if (storageUsed) storageUsed.style.width = (storage.used / storage.limit) * 100 + '%';
+        const storageReserved = document.getElementById('metric-storage-reserved');
+        if (storageReserved) storageReserved.style.width = (storage.reserved / storage.limit) * 100 + '%';
+        const storageRemaining = document.getElementById('metric-storage-remaining');
+        if (storageRemaining) storageRemaining.innerText = `${remainingGB} GB`;
+    } catch (e) {
+        console.error("Failed to fetch system metrics", e);
     }
 }
 
