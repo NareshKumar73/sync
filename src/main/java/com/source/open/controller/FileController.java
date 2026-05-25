@@ -575,6 +575,19 @@ public class FileController {
 
 	private void logTransfer(String type, String filename, String ipAddress, long size) {
 		try {
+			Optional<com.source.open.payload.TransferHistory> recentOpt = transferHistoryRepo.findFirstByIpAddressAndFilenameAndTypeOrderByTimestampDesc(ipAddress, filename, type);
+			
+			if (recentOpt.isPresent()) {
+				com.source.open.payload.TransferHistory recent = recentOpt.get();
+				// If the transfer happened within the last 1 hour, accumulate size
+				if (recent.getTimestamp().isAfter(LocalDateTime.now().minusHours(1))) {
+					recent.setFileSize(recent.getFileSize() + size);
+					recent.setTimestamp(LocalDateTime.now());
+					transferHistoryRepo.save(recent);
+					return;
+				}
+			}
+
 			com.source.open.payload.TransferHistory th = new com.source.open.payload.TransferHistory();
 			th.setType(type);
 			th.setFilename(filename);

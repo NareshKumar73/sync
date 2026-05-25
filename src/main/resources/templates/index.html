@@ -13,66 +13,71 @@
 <body class="custom-bg-active">
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg glass-nav sticky-top z-3">
-        <div class="container d-flex justify-content-between align-items-center">
+        <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="#"> 
                 <i class="bi bi-hdd-network-fill" style="color: var(--accent);"></i> SYNC - KING
             </a>
-            <div class="d-flex gap-3 align-items-center">
-                <!-- Sync Controls -->
-                <div class="form-check form-switch me-2 d-none d-md-flex align-items-center">
-                    <input class="form-check-input shadow-none" type="checkbox" id="autoSyncToggle" onchange="toggleAutoSync()">
-                    <label class="form-check-label ms-2 text-secondary small fw-medium" for="autoSyncToggle">Auto-Sync</label>
-                </div>
-                <button class="btn btn-surface btn-sm" onclick="triggerSync()" title="Sync Now">
-                    <i class="bi bi-arrow-repeat text-secondary"></i> Sync
-                </button>
-                <!-- System Dropdown -->
-                <div class="dropdown">
-                    <button class="btn btn-surface btn-sm dropdown-toggle" type="button" id="systemDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="System Settings">
-                        <i class="bi bi-cpu text-secondary"></i> System
+            <button class="navbar-toggler border-0 shadow-none p-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="bi bi-list fs-3 text-secondary"></i>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <div class="d-flex flex-wrap gap-2 gap-lg-3 align-items-center mt-3 mt-lg-0 justify-content-start justify-content-lg-end py-2 py-lg-0">
+                    <!-- Sync Controls -->
+                    <div class="form-check form-switch me-lg-2 d-flex align-items-center py-1">
+                        <input class="form-check-input shadow-none" type="checkbox" id="autoSyncToggle" onchange="toggleAutoSync()">
+                        <label class="form-check-label ms-2 text-secondary small fw-medium text-nowrap" for="autoSyncToggle">Auto-Sync</label>
+                    </div>
+                    <button class="btn btn-surface btn-sm" onclick="triggerSync()" title="Sync Now">
+                        <i class="bi bi-arrow-repeat text-secondary"></i> Sync
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 surface-panel" aria-labelledby="systemDropdown">
-                        <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#networkModal"><i class="bi bi-router me-2 text-secondary"></i>Network Nodes</a></li>
-                        <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#systemModal"><i class="bi bi-cpu me-2 text-secondary"></i>System Status</a></li>
-                        <li><a class="dropdown-item fw-medium" href="#" onclick="showSystemIps()"><i class="bi bi-pc-display-horizontal me-2 text-secondary"></i>System IPs</a></li>
-                        <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#speedTestModal"><i class="bi bi-speedometer2 me-2 text-secondary"></i>Speed Test</a></li>
-                    </ul>
-                </div>
+                    <!-- System Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-surface btn-sm dropdown-toggle" type="button" id="systemDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="System Settings">
+                            <i class="bi bi-cpu text-secondary"></i> System
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 surface-panel" aria-labelledby="systemDropdown">
+                            <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#networkModal"><i class="bi bi-router me-2 text-secondary"></i>Network Nodes</a></li>
+                            <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#systemModal"><i class="bi bi-cpu me-2 text-secondary"></i>System Status</a></li>
+                            <li><a class="dropdown-item fw-medium" href="#" onclick="showSystemIps()"><i class="bi bi-pc-display-horizontal me-2 text-secondary"></i>System IPs</a></li>
+                            <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#speedTestModal"><i class="bi bi-speedometer2 me-2 text-secondary"></i>Speed Test</a></li>
+                        </ul>
+                    </div>
 
-                <button class="btn btn-surface btn-sm" onclick="showQrCode()" title="QR Code">
-                    <i class="bi bi-qr-code text-secondary"></i> QR
-                </button>
-                <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#chatModal" title="Chat">
-                    <i class="bi bi-chat-dots text-secondary"></i> Chat
-                </button>
-                <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#clipboardModal" title="Clipboard">
-                    <i class="bi bi-clipboard text-secondary"></i> Clipboard
-                </button>
-                
-                <!-- Theme Dropdown -->
-                <div class="dropdown">
-                    <button class="btn btn-surface btn-sm dropdown-toggle" type="button" id="themeDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Theme Settings">
-                        <i class="bi bi-palette text-secondary default-icon"></i>
-                        <i class="bi bi-balloon-heart text-danger rabbit-icon"></i> Theme
+                    <button class="btn btn-surface btn-sm" onclick="showQrCode()" title="QR Code">
+                        <i class="bi bi-qr-code text-secondary"></i> QR
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 surface-panel" aria-labelledby="themeDropdown">
-                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('light')"><i class="bi bi-sun me-2 text-warning"></i>Light</a></li>
-                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('dark')"><i class="bi bi-moon-stars me-2 text-primary"></i>Dark</a></li>
-                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('girl')"><i class="bi bi-balloon-heart me-2 text-danger"></i>Girl Mode</a></li>
-                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('genz')"><i class="bi bi-lightning-charge me-2 text-info"></i>Gen Z Mode</a></li>
-                        <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('glass')"><i class="bi bi-phone me-2 text-secondary"></i>Glassmorphism</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#bgSettingsModal"><i class="bi bi-image me-2 text-success"></i>Wallpaper Settings</a></li>
-                    </ul>
+                    <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#chatModal" title="Chat">
+                        <i class="bi bi-chat-dots text-secondary"></i> Chat
+                    </button>
+                    <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#clipboardModal" title="Clipboard">
+                        <i class="bi bi-clipboard text-secondary"></i> Clipboard
+                    </button>
+                    
+                    <!-- Theme Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-surface btn-sm dropdown-toggle" type="button" id="themeDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Theme Settings">
+                            <i class="bi bi-palette text-secondary default-icon"></i>
+                            <i class="bi bi-balloon-heart text-danger rabbit-icon"></i> Theme
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 surface-panel" aria-labelledby="themeDropdown">
+                            <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('light')"><i class="bi bi-sun me-2 text-warning"></i>Light</a></li>
+                            <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('dark')"><i class="bi bi-moon-stars me-2 text-primary"></i>Dark</a></li>
+                            <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('girl')"><i class="bi bi-balloon-heart me-2 text-danger"></i>Girl Mode</a></li>
+                            <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('genz')"><i class="bi bi-lightning-charge me-2 text-info"></i>Gen Z Mode</a></li>
+                            <li><a class="dropdown-item fw-medium" href="#" onclick="changeTheme('glass')"><i class="bi bi-phone me-2 text-secondary"></i>Glassmorphism</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#bgSettingsModal"><i class="bi bi-image me-2 text-success"></i>Wallpaper Settings</a></li>
+                        </ul>
+                    </div>
+
+                    <a class="btn btn-surface btn-sm" th:href="@{/history}" title="Transfer History">
+                        <i class="bi bi-clock-history text-secondary"></i> History
+                    </a>
+
+                    <button class="btn btn-premium btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                        <i class="bi bi-cloud-upload"></i> Upload
+                    </button>
                 </div>
-
-                <a class="btn btn-surface btn-sm" th:href="@{/history}" title="Transfer History">
-                    <i class="bi bi-clock-history text-secondary"></i> History
-                </a>
-
-                <button class="btn btn-premium btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
-                    <i class="bi bi-cloud-upload"></i> Upload
-                </button>
             </div>
         </div>
     </nav>
@@ -158,15 +163,18 @@
 
                         <div class="d-flex gap-2">
                             <button th:if="${!file.directory}" type="button" class="btn btn-surface btn-sm rounded-circle shadow-none" 
-                                    th:data-url="${file.url}" th:data-name="${file.name}" th:data-type="${file.fileType}"
+                                    th:data-url="@{${file.url}}" th:data-name="${file.name}" th:data-type="${file.fileType}"
                                     onclick="openPreview(this.getAttribute('data-url'), this.getAttribute('data-name'), this.getAttribute('data-type'))" title="Preview">
                                 <i class="bi bi-eye text-secondary"></i>
                             </button>
                             <button th:if="${!file.directory}" type="button" class="btn btn-surface btn-sm rounded-circle shadow-none" 
-                                    th:data-url="${file.url}" th:data-name="${file.name}" th:data-size="${file.sizeInBytes}"
-                                    onclick="startDownloadInUI(this.getAttribute('data-url'), this.getAttribute('data-name'), this.getAttribute('data-size'))" title="Download"> 
+                                    th:data-url="@{${file.url}}" th:data-name="${file.name}" th:data-size="${file.sizeInBytes}"
+                                    onclick="startDownloadInUI(this.getAttribute('data-url'), this.getAttribute('data-name'), this.getAttribute('data-size'))" title="Resumable Download"> 
                                 <i class="bi bi-download" style="color: var(--accent);"></i>
                             </button>
+                            <a th:if="${!file.directory}" th:href="@{${file.url}}" class="btn btn-surface btn-sm rounded-circle shadow-none" title="Direct Download" download> 
+                                <i class="bi bi-cloud-arrow-down" style="color: var(--success);"></i>
+                            </a>
                             <a th:if="${file.directory}" th:href="@{/zip-folder(path=${file.relativePath})}" class="btn btn-surface btn-sm rounded-circle shadow-none" title="Download Folder ZIP"> 
                                 <i class="bi bi-file-zip" style="color: var(--accent);"></i>
                             </a>

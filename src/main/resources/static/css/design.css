@@ -356,6 +356,17 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    min-width: 0;
+}
+
+.file-item > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+.file-item > div:last-child {
+    flex-shrink: 0;
 }
 
 .file-item:hover {
@@ -375,11 +386,13 @@ body {
     background: var(--accent-light);
     color: var(--accent);
     border-radius: var(--border-radius-pill);
+    flex-shrink: 0;
 }
 
 .file-details {
     flex-grow: 1;
     margin-left: 16px;
+    min-width: 0;
 }
 
 .file-name {
@@ -387,11 +400,35 @@ body {
     font-weight: 600;
     margin-bottom: 2px;
     display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .file-meta {
     font-size: 0.8rem;
     color: var(--text-secondary);
+}
+
+@media (max-width: 576px) {
+    .file-item {
+        padding: 10px 12px;
+        border-radius: var(--border-radius-lg);
+    }
+    .file-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 1.2rem;
+    }
+    .file-details {
+        margin-left: 12px;
+    }
+    .selection-bar {
+        width: 90%;
+        bottom: 16px;
+        padding: 8px 16px;
+        justify-content: space-between;
+    }
 }
 
 .folder-badge {
@@ -515,16 +552,24 @@ body {
 .table-custom {
     color: var(--text-primary);
     border-color: var(--border-color);
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-primary);
+    --bs-table-hover-color: var(--text-primary);
+    --bs-table-hover-bg: var(--bg-primary);
+}
+.table-custom td {
+    background-color: transparent !important;
+    color: var(--text-primary);
+    border-bottom-color: var(--border-color);
 }
 .table-custom thead th {
-    background-color: var(--bg-primary);
-    border-bottom: 2px solid var(--border-color);
-    color: var(--text-secondary);
+    background-color: var(--bg-primary) !important;
+    border-bottom: 2px solid var(--border-color) !important;
+    color: var(--text-secondary) !important;
     font-weight: 600;
 }
-.table-custom tbody tr:hover {
-    background-color: var(--bg-secondary);
-    filter: brightness(0.95);
+.table-custom tbody tr:hover td {
+    background-color: var(--bg-primary) !important;
 }
 
 /* Animations */
