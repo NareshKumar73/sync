@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="../static/bootstrap/bootstrap.css" th:href="@{/bootstrap/bootstrap.css}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="stylesheet" href="../static/css/design.css" th:href="@{/css/design.css}">
     <script>
         const savedTheme = localStorage.getItem('syncTheme') || 'light';
@@ -15,19 +15,19 @@
 </head>
 
 <body class="custom-bg-active">
-    <!-- Navbar -->
+    <!-- Top App Bar -->
     <nav class="navbar navbar-expand-lg glass-nav sticky-top z-3">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center gap-2" th:href="@{/}"> 
-                <i class="bi bi-hdd-network-fill" style="color: var(--accent);"></i> SYNC - KING
+            <a class="navbar-brand d-flex align-items-center gap-2" th:href="@{/}">
+                <span class="material-symbols-rounded icon-filled">cloud_sync</span> SYNC-KING
             </a>
             <button class="navbar-toggler border-0 shadow-none p-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <i class="bi bi-list fs-3 text-secondary"></i>
+                <span class="material-symbols-rounded" style="font-size: 28px; color: var(--md-sys-color-on-surface-variant);">menu</span>
             </button>
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                 <div class="d-flex flex-wrap gap-2 gap-lg-3 align-items-center mt-3 mt-lg-0 justify-content-start justify-content-lg-end py-2 py-lg-0">
                     <a class="btn btn-surface btn-sm" th:href="@{/}" title="Home">
-                        <i class="bi bi-house text-secondary"></i> Home
+                        <span class="material-symbols-rounded">home</span> Home
                     </a>
                 </div>
             </div>
@@ -39,46 +39,58 @@
         <!-- Breadcrumbs -->
         <nav aria-label="breadcrumb" class="mb-4 surface-panel p-3 animate-fade-in" style="animation-delay: 0.1s;">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none fw-medium" style="color: var(--accent);">Root</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none fw-medium" style="color: var(--md-sys-color-primary);">Root</a></li>
                 <li class="breadcrumb-item active text-primary fw-medium" aria-current="page">Transfer History</li>
             </ol>
         </nav>
 
-        <div class="row g-4 mb-4 animate-fade-in" style="animation-delay: 0.15s;" th:if="${historyList != null && !historyList.empty}">
-            <div class="col-md-3">
-                <div class="surface-panel p-3 text-center h-100">
-                    <div class="text-secondary mb-2"><i class="bi bi-cloud-arrow-up fs-4 text-success"></i></div>
-                    <h5 class="fw-bold text-primary mb-1" th:text="${totalUploaded}">0 B</h5>
-                    <small class="text-muted fw-medium">Total Uploaded</small>
+        <!-- Stats Cards -->
+        <div class="row g-3 mb-4 animate-fade-in" style="animation-delay: 0.15s;" th:if="${historyList != null && !historyList.empty}">
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon upload-icon">
+                        <span class="material-symbols-rounded">cloud_upload</span>
+                    </div>
+                    <div class="stat-value" th:text="${totalUploaded}">0 B</div>
+                    <div class="stat-label">Total Uploaded</div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="surface-panel p-3 text-center h-100">
-                    <div class="text-secondary mb-2"><i class="bi bi-cloud-arrow-down fs-4 text-info"></i></div>
-                    <h5 class="fw-bold text-primary mb-1" th:text="${totalDownloaded}">0 B</h5>
-                    <small class="text-muted fw-medium">Total Downloaded</small>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon download-icon">
+                        <span class="material-symbols-rounded">cloud_download</span>
+                    </div>
+                    <div class="stat-value" th:text="${totalDownloaded}">0 B</div>
+                    <div class="stat-label">Total Downloaded</div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="surface-panel p-3 text-center h-100">
-                    <div class="text-secondary mb-2"><i class="bi bi-diagram-3 fs-4 text-warning"></i></div>
-                    <h5 class="fw-bold text-primary mb-1" th:text="${uniqueIps}">0</h5>
-                    <small class="text-muted fw-medium">Unique IPs</small>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon ip-icon">
+                        <span class="material-symbols-rounded">devices</span>
+                    </div>
+                    <div class="stat-value" th:text="${uniqueIps}">0</div>
+                    <div class="stat-label">Unique IPs</div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="surface-panel p-3 text-center h-100">
-                    <div class="text-secondary mb-2"><i class="bi bi-arrow-left-right fs-4 text-danger"></i></div>
-                    <h5 class="fw-bold text-primary mb-1" th:text="${totalTransfers}">0</h5>
-                    <small class="text-muted fw-medium">Total Transfers</small>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon transfer-icon">
+                        <span class="material-symbols-rounded">swap_horiz</span>
+                    </div>
+                    <div class="stat-value" th:text="${totalTransfers}">0</div>
+                    <div class="stat-label">Total Transfers</div>
                 </div>
             </div>
         </div>
 
+        <!-- Top Files & Active IPs -->
         <div class="row g-4 mb-4 animate-fade-in" style="animation-delay: 0.18s;" th:if="${historyList != null && !historyList.empty}">
             <div class="col-md-6">
-                <div class="surface-panel p-3 h-100">
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-trophy text-warning me-2"></i>Top 5 Downloaded Files</h6>
+                <div class="surface-panel p-4 h-100">
+                    <h6 class="fw-bold text-primary mb-3">
+                        <span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-warning);">emoji_events</span>Top 5 Downloaded Files
+                    </h6>
                     <ul class="list-group list-group-flush" th:if="${topFiles.size() > 0}">
                         <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center border-0 px-0 py-2" th:each="file : ${topFiles}">
                             <span class="text-truncate me-2 fw-medium text-dark" style="max-width: 70%;" th:text="${file.filename}">File</span>
@@ -89,8 +101,10 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="surface-panel p-3 h-100">
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-pc-display text-info me-2"></i>Top 5 Active IPs</h6>
+                <div class="surface-panel p-4 h-100">
+                    <h6 class="fw-bold text-primary mb-3">
+                        <span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-secondary);">computer</span>Top 5 Active IPs
+                    </h6>
                     <ul class="list-group list-group-flush" th:if="${topIps.size() > 0}">
                         <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center border-0 px-0 py-2" th:each="ip : ${topIps}">
                             <span class="text-truncate me-2 fw-medium text-dark" th:text="${ip.ip}">IP</span>
@@ -101,9 +115,12 @@
             </div>
         </div>
 
+        <!-- Transfer History Table -->
         <div class="surface-panel p-4 animate-fade-in" style="animation-delay: 0.2s;">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="text-primary fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>Transfer History</h4>
+                <h4 class="text-primary fw-bold mb-0">
+                    <span class="material-symbols-rounded me-2">history</span>Transfer History
+                </h4>
                 <ul class="nav nav-pills" id="historyTab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active btn-sm py-1 px-3" id="consolidated-tab" data-bs-toggle="tab" data-bs-target="#consolidated" type="button" role="tab" aria-controls="consolidated" aria-selected="true">Consolidated</button>
@@ -113,16 +130,16 @@
                     </li>
                 </ul>
             </div>
-            
+
             <div class="tab-content" id="historyTabContent">
                 <!-- Consolidated View -->
                 <div class="tab-pane fade show active" id="consolidated" role="tabpanel" aria-labelledby="consolidated-tab">
                     <div th:if="${historyList == null || historyList.empty}" class="text-center py-5 mt-3">
-                        <div class="text-secondary display-1 mb-3 opacity-50"><i class="bi bi-inbox"></i></div>
-                        <h5 class="text-primary">No transfer history</h5>
+                        <span class="material-symbols-rounded" style="font-size: 72px; color: var(--md-sys-color-outline-variant);">inbox</span>
+                        <h5 class="text-primary mt-3">No transfer history</h5>
                         <p class="text-secondary">Your upload and download history will appear here.</p>
                     </div>
-                    <div th:unless="${historyList == null || historyList.empty}" class="table-responsive">
+                    <div th:unless="${historyList == null || historyList.empty}" class="table-responsive table-responsive-cards">
                         <table class="table table-hover align-middle table-custom">
                             <thead>
                                 <tr>
@@ -137,10 +154,10 @@
                                 <tr th:each="history : ${historyList}">
                                     <td class="text-nowrap" th:text="${#temporals.format(history.timestamp, 'yyyy-MM-dd HH:mm:ss')}">2026-05-20 12:00:00</td>
                                     <td>
-                                        <span th:if="${history.type == 'MANUAL_UPLOAD'}" class="badge bg-success"><i class="bi bi-cloud-arrow-up me-1"></i> Upload</span>
-                                        <span th:if="${history.type == 'MANUAL_DOWNLOAD'}" class="badge bg-primary"><i class="bi bi-cloud-arrow-down me-1"></i> Download</span>
-                                        <span th:if="${history.type == 'SYNC_JOB'}" class="badge bg-info text-dark"><i class="bi bi-arrow-repeat me-1"></i> Sync</span>
-                                        <span th:unless="${history.type == 'MANUAL_UPLOAD' or history.type == 'MANUAL_DOWNLOAD' or history.type == 'SYNC_JOB'}" class="badge bg-secondary" th:text="${history.type}">Other</span>
+                                        <span th:if="${history.type == 'MANUAL_UPLOAD'}" class="badge badge-m3 badge-upload"><span class="material-symbols-rounded" style="font-size:14px;">cloud_upload</span> Upload</span>
+                                        <span th:if="${history.type == 'MANUAL_DOWNLOAD'}" class="badge badge-m3 badge-download"><span class="material-symbols-rounded" style="font-size:14px;">cloud_download</span> Download</span>
+                                        <span th:if="${history.type == 'SYNC_JOB'}" class="badge badge-m3 badge-sync"><span class="material-symbols-rounded" style="font-size:14px;">sync</span> Sync</span>
+                                        <span th:unless="${history.type == 'MANUAL_UPLOAD' or history.type == 'MANUAL_DOWNLOAD' or history.type == 'SYNC_JOB'}" class="badge badge-m3 bg-secondary" th:text="${history.type}">Other</span>
                                     </td>
                                     <td class="text-break fw-medium" th:text="${history.filename}">file.txt</td>
                                     <td class="text-muted" th:text="${history.ipAddress}">192.168.1.1</td>
@@ -154,11 +171,11 @@
                 <!-- Raw View -->
                 <div class="tab-pane fade" id="raw" role="tabpanel" aria-labelledby="raw-tab">
                     <div th:if="${rawHistoryList == null || rawHistoryList.empty}" class="text-center py-5 mt-3">
-                        <div class="text-secondary display-1 mb-3 opacity-50"><i class="bi bi-inbox"></i></div>
-                        <h5 class="text-primary">No transfer history</h5>
+                        <span class="material-symbols-rounded" style="font-size: 72px; color: var(--md-sys-color-outline-variant);">inbox</span>
+                        <h5 class="text-primary mt-3">No transfer history</h5>
                         <p class="text-secondary">Your raw logs will appear here.</p>
                     </div>
-                    <div th:unless="${rawHistoryList == null || rawHistoryList.empty}" class="table-responsive">
+                    <div th:unless="${rawHistoryList == null || rawHistoryList.empty}" class="table-responsive table-responsive-cards">
                         <table class="table table-hover align-middle table-custom">
                             <thead>
                                 <tr>
@@ -173,10 +190,10 @@
                                 <tr th:each="history : ${rawHistoryList}">
                                     <td class="text-nowrap" th:text="${#temporals.format(history.timestamp, 'yyyy-MM-dd HH:mm:ss')}">2026-05-20 12:00:00</td>
                                     <td>
-                                        <span th:if="${history.type == 'MANUAL_UPLOAD'}" class="badge bg-success"><i class="bi bi-cloud-arrow-up me-1"></i> Upload</span>
-                                        <span th:if="${history.type == 'MANUAL_DOWNLOAD'}" class="badge bg-primary"><i class="bi bi-cloud-arrow-down me-1"></i> Download</span>
-                                        <span th:if="${history.type == 'SYNC_JOB'}" class="badge bg-info text-dark"><i class="bi bi-arrow-repeat me-1"></i> Sync</span>
-                                        <span th:unless="${history.type == 'MANUAL_UPLOAD' or history.type == 'MANUAL_DOWNLOAD' or history.type == 'SYNC_JOB'}" class="badge bg-secondary" th:text="${history.type}">Other</span>
+                                        <span th:if="${history.type == 'MANUAL_UPLOAD'}" class="badge badge-m3 badge-upload"><span class="material-symbols-rounded" style="font-size:14px;">cloud_upload</span> Upload</span>
+                                        <span th:if="${history.type == 'MANUAL_DOWNLOAD'}" class="badge badge-m3 badge-download"><span class="material-symbols-rounded" style="font-size:14px;">cloud_download</span> Download</span>
+                                        <span th:if="${history.type == 'SYNC_JOB'}" class="badge badge-m3 badge-sync"><span class="material-symbols-rounded" style="font-size:14px;">sync</span> Sync</span>
+                                        <span th:unless="${history.type == 'MANUAL_UPLOAD' or history.type == 'MANUAL_DOWNLOAD' or history.type == 'SYNC_JOB'}" class="badge badge-m3 bg-secondary" th:text="${history.type}">Other</span>
                                     </td>
                                     <td class="text-break fw-medium" th:text="${history.filename}">file.txt</td>
                                     <td class="text-muted" th:text="${history.ipAddress}">192.168.1.1</td>
@@ -189,18 +206,19 @@
             </div>
         </div>
 
-        <div class="surface-panel p-4 animate-fade-in mt-4" style="animation-delay: 0.3s;">
-            <h4 class="mb-4 text-primary fw-bold"><i class="bi bi-hdd-network me-2"></i>Tomcat Network Traffic</h4>
-            
+        <!-- Tomcat Network Traffic -->
+        <div class="surface-panel p-4 mt-4 animate-fade-in" style="animation-delay: 0.3s;">
+            <h4 class="mb-4 text-primary fw-bold">
+                <span class="material-symbols-rounded me-2">router</span>Tomcat Network Traffic
+            </h4>
+
             <div th:if="${networkTrafficList == null || networkTrafficList.empty}" class="text-center py-5 mt-3">
-                <div class="text-secondary display-1 mb-3 opacity-50">
-                    <i class="bi bi-router"></i>
-                </div>
-                <h5 class="text-primary">No network traffic</h5>
+                <span class="material-symbols-rounded" style="font-size: 72px; color: var(--md-sys-color-outline-variant);">router</span>
+                <h5 class="text-primary mt-3">No network traffic</h5>
                 <p class="text-secondary">Traffic statistics per IP will appear here.</p>
             </div>
 
-            <div th:unless="${networkTrafficList == null || networkTrafficList.empty}" class="table-responsive">
+            <div th:unless="${networkTrafficList == null || networkTrafficList.empty}" class="table-responsive table-responsive-cards">
                 <table class="table table-hover align-middle table-custom">
                     <thead>
                         <tr>
@@ -222,6 +240,18 @@
             </div>
         </div>
     </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav d-md-none">
+        <a href="#" class="bottom-nav-item" th:href="@{/}">
+            <div class="nav-icon-wrap"><span class="material-symbols-rounded">folder</span></div>
+            <span class="nav-label">Files</span>
+        </a>
+        <a href="#" class="bottom-nav-item active" th:href="@{/history}">
+            <div class="nav-icon-wrap"><span class="material-symbols-rounded icon-filled">history</span></div>
+            <span class="nav-label">History</span>
+        </a>
+    </nav>
 
     <script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
 </body>

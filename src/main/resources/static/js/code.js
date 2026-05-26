@@ -1,3 +1,135 @@
+// ===================================================================
+// SYNC-KING — Material You Expressive JavaScript
+// ===================================================================
+
+// Toast Notification System (replaces alert())
+function showToast(message, duration = 3000) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast-m3';
+    toast.innerHTML = `<span class="material-symbols-rounded" style="font-size:20px;">info</span> ${message}`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(40px)';
+        toast.style.transition = 'all 300ms ease';
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+// File Type Icon Assignment
+function assignFileIconClasses() {
+    const fileItems = document.querySelectorAll('.file-item');
+    const imageExts = ['jpg','jpeg','png','gif','svg','webp','bmp','ico'];
+    const videoExts = ['mp4','webm','ogg','avi','mkv','mov','flv'];
+    const docExts = ['pdf','doc','docx','txt','md','html','json','xml','csv','xls','xlsx','ppt','pptx'];
+    const archiveExts = ['zip','rar','7z','tar','gz','bz2'];
+    const audioExts = ['mp3','wav','ogg','flac','aac','m4a','wma'];
+    
+    fileItems.forEach(item => {
+        const name = (item.getAttribute('data-name') || '').toLowerCase();
+        const isDir = item.getAttribute('data-is-dir') === 'true';
+        const iconEl = item.querySelector('.file-icon');
+        if (!iconEl) return;
+        
+        if (isDir) {
+            iconEl.classList.add('folder-icon');
+        } else {
+            const ext = name.split('.').pop();
+            if (imageExts.includes(ext)) iconEl.classList.add('image-icon');
+            else if (videoExts.includes(ext)) iconEl.classList.add('video-icon');
+            else if (docExts.includes(ext)) iconEl.classList.add('document-icon');
+            else if (archiveExts.includes(ext)) iconEl.classList.add('archive-icon');
+            else if (audioExts.includes(ext)) iconEl.classList.add('audio-icon');
+            else iconEl.classList.add('generic-icon');
+        }
+    });
+}
+
+// File Type Chip Filter
+function filterByType(type) {
+    // Update chip active states
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    
+    const imageExts = ['jpg','jpeg','png','gif','svg','webp','bmp','ico'];
+    const videoExts = ['mp4','webm','ogg','avi','mkv','mov','flv'];
+    const docExts = ['pdf','doc','docx','txt','md','html','json','xml','csv','xls','xlsx','ppt','pptx'];
+    const archiveExts = ['zip','rar','7z','tar','gz','bz2'];
+    const audioExts = ['mp3','wav','ogg','flac','aac','m4a','wma'];
+    
+    const items = document.querySelectorAll('.file-item');
+    items.forEach(item => {
+        const name = (item.getAttribute('data-name') || '').toLowerCase();
+        const isDir = item.getAttribute('data-is-dir') === 'true';
+        
+        if (type === 'all') {
+            item.style.display = 'flex';
+            return;
+        }
+        
+        const ext = name.split('.').pop();
+        let match = false;
+        
+        if (type === 'image') match = imageExts.includes(ext);
+        else if (type === 'video') match = videoExts.includes(ext);
+        else if (type === 'document') match = docExts.includes(ext) || isDir;
+        else if (type === 'archive') match = archiveExts.includes(ext);
+        else if (type === 'audio') match = audioExts.includes(ext);
+        
+        item.style.display = match ? 'flex' : 'none';
+    });
+}
+
+// Storage Stats Strip
+async function updateStorageStrip() {
+    try {
+        const res = await fetch('/api/storage/status');
+        const storage = await res.json();
+        const usedGB = ((storage.used + storage.reserved) / (1024**3)).toFixed(1);
+        const limitGB = (storage.limit / (1024**3)).toFixed(0);
+        const percent = ((storage.used + storage.reserved) / storage.limit) * 100;
+        
+        const text = document.getElementById('storageStripText');
+        if (text) text.innerText = `${usedGB} GB / ${limitGB} GB`;
+        
+        const ring = document.getElementById('storageRing');
+        if (ring) {
+            const circumference = 2 * Math.PI * 15.91549430918954;
+            const offset = circumference - (percent / 100) * circumference;
+            ring.style.strokeDasharray = circumference;
+            ring.style.strokeDashoffset = offset;
+        }
+    } catch(e) {
+        const text = document.getElementById('storageStripText');
+        if (text) text.innerText = 'Unavailable';
+    }
+}
+
+// App Bar Elevation on Scroll + FAB Hide on Scroll
+let lastScrollY = 0;
+window.addEventListener('scroll', () => {
+    // Navbar elevation
+    const nav = document.querySelector('.glass-nav');
+    if (nav) {
+        nav.classList.toggle('elevated', window.scrollY > 10);
+    }
+    
+    // FAB hide on scroll down
+    const fab = document.getElementById('uploadFab');
+    if (fab) {
+        if (window.scrollY > lastScrollY && window.scrollY > 200) {
+            fab.style.transform = 'translateY(200px)';
+            fab.style.transition = 'transform 300ms cubic-bezier(0.2, 0, 0, 1)';
+        } else {
+            fab.style.transform = 'translateY(0)';
+            fab.style.transition = 'transform 300ms cubic-bezier(0.05, 0.7, 0.1, 1.0)';
+        }
+    }
+    lastScrollY = window.scrollY;
+});
+
 // Utility and existing functions
 async function filterFiles() {
     const input = document.getElementById('searchInput');
@@ -51,17 +183,18 @@ async function filterFiles() {
                 
                 const matchedFiles = result.files.filter(f => f.name.toLowerCase().includes(filter));
                 if (matchedFiles.length > 0) {
-                    globalHtml += `<div class="mb-3 p-3 bg-white rounded-3 border">
+                    globalHtml += `<div class="mb-3 p-3 rounded-3" style="background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant);">
                         <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
-                            <span class="fw-bold text-dark"><i class="bi bi-hdd-network me-2 text-primary"></i>Node: ${result.node.ipAddress}</span>
-                            <a href="http://${result.node.ipAddress}:${result.node.port}/" target="_blank" class="badge bg-primary text-decoration-none">Open Node</a>
+                            <span class="fw-bold" style="color: var(--md-sys-color-on-surface);"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary); font-size: 18px;">dns</span>Node: ${result.node.ipAddress}</span>
+                            <a href="http://${result.node.ipAddress}:${result.node.port}/" target="_blank" class="badge" style="background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); text-decoration: none;">Open Node</a>
                         </div>`;
                         
                     matchedFiles.forEach(f => {
-                        let iconClass = f.directory ? 'bi-folder-fill text-warning' : 'bi-file-earmark-text text-info';
+                        let iconName = f.directory ? 'folder' : 'description';
+                        let iconColor = f.directory ? 'var(--file-color-folder)' : 'var(--md-sys-color-secondary)';
                         globalHtml += `<div class="d-flex justify-content-between align-items-center py-1">
-                            <span class="small text-secondary"><i class="bi ${iconClass} me-2"></i>${f.relativePath || f.name}</span>
-                            <a href="http://${result.node.ipAddress}:${result.node.port}/resource?filecode=${f.fileCode}" class="btn btn-sm btn-light py-0" title="Download"><i class="bi bi-download"></i></a>
+                            <span class="small" style="color: var(--md-sys-color-on-surface-variant);"><span class="material-symbols-rounded me-2" style="font-size: 16px; color: ${iconColor};">${iconName}</span>${f.relativePath || f.name}</span>
+                            <a href="http://${result.node.ipAddress}:${result.node.port}/resource?filecode=${f.fileCode}" class="btn btn-sm py-0" style="color: var(--md-sys-color-primary);" title="Download"><span class="material-symbols-rounded" style="font-size: 18px;">download</span></a>
                         </div>`;
                         totalGlobalFound++;
                     });
@@ -197,7 +330,7 @@ function openPreview(url, name, fileType) {
         iframe.style.background = '#fff';
         body.appendChild(iframe);
     } else {
-        body.innerHTML = `<div class="p-5 text-center text-muted"><i class="bi bi-file-earmark-x display-1 d-block mb-3"></i><p>Preview not available for .${fileType} files.</p></div>`;
+        body.innerHTML = `<div class="p-5 text-center" style="color: var(--md-sys-color-on-surface-variant);"><span class="material-symbols-rounded d-block mb-3" style="font-size: 72px;">draft</span><p>Preview not available for .${fileType} files.</p></div>`;
     }
 
     new bootstrap.Modal(document.getElementById('previewModal')).show();
@@ -362,8 +495,8 @@ async function loadNodes() {
                 <td>${node.port}</td>
                 <td class="small text-muted">${lastActive}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteNode(${node.id})" title="Delete"><i class="bi bi-trash"></i></button>
-                    <a href="http://${node.ipAddress}:${node.port}/" target="_blank" class="btn btn-sm btn-outline-success border-0 ms-1" title="Browse Remote Files"><i class="bi bi-box-arrow-up-right"></i></a>
+                    <button class="file-action-btn" onclick="deleteNode(${node.id})" title="Delete"><span class="material-symbols-rounded" style="color: var(--md-sys-color-error);">delete</span></button>
+                    <a href="http://${node.ipAddress}:${node.port}/" target="_blank" class="file-action-btn ms-1" title="Browse Remote Files"><span class="material-symbols-rounded" style="color: var(--md-sys-color-success);">open_in_new</span></a>
                 </td>
             </tr>
         `;
@@ -396,7 +529,7 @@ async function testNode() {
         body: JSON.stringify({ ipAddress: ip, port: port })
     });
     const result = await res.json();
-    alert(result.message);
+    showToast(result.message);
 }
 
 async function deleteNode(id) {
@@ -407,7 +540,7 @@ async function deleteNode(id) {
 // Sync Controls
 async function triggerSync() {
     await fetch('/api/sync/trigger', { method: 'POST' });
-    alert('Sync triggered successfully.');
+    showToast('Sync triggered successfully');
 }
 
 async function toggleAutoSync() {
@@ -429,6 +562,12 @@ window.addEventListener('DOMContentLoaded', async () => {
         select.value = savedSort;
         sortFiles();
     }
+    
+    // Assign file icon classes based on extension
+    assignFileIconClasses();
+    
+    // Update storage strip
+    updateStorageStrip();
 });
 
 async function loadConflicts() {
@@ -443,20 +582,13 @@ async function loadConflicts() {
     }
 
     for (const [path, meta] of Object.entries(conflictsMap)) {
-        // Find node IP. We need base URL. We can fetch active nodes or just prompt.
-        // For simplicity, we just pass the URL we know from the conflict, but meta only has relative URL.
-        // We'll extract host from `meta.url` if it was absolute, but it's relative.
-        // Actually the backend needs `baseUrl`. Let's just trigger a full overwrite from UI if possible.
-        // Since `syncConflicts` is just a map, we can change backend to resolve without baseUrl if we store the remote IP or just ping again.
-        // For now, let's just show them.
-        
         container.innerHTML += `
             <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
                 <div>
                     <span class="d-block fw-bold text-light">${meta.name} <small class="text-secondary">(${path})</small></span>
                     <span class="text-muted">Remote Size: ${meta.size} | Remote Date: ${meta.lastModified}</span>
                 </div>
-                <button class="btn btn-sm btn-outline-warning" onclick="alert('To resolve, delete local file and sync again.')">Resolve</button>
+                <button class="btn btn-sm btn-outline-warning" onclick="showToast('To resolve, delete local file and sync again.')">Resolve</button>
             </div>
         `;
     }
@@ -481,7 +613,7 @@ async function showSystemIps() {
         new bootstrap.Modal(document.getElementById('ipModal')).show();
     } catch (error) {
         console.error("Failed to fetch system IPs", error);
-        alert("Failed to fetch system IPs.");
+        showToast('Failed to fetch system IPs', 4000);
     }
 }
 
@@ -583,7 +715,7 @@ function copyCurrentUrl() {
     const text = window.location.href;
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(() => {
-            alert("Link copied to clipboard!");
+            showToast('Link copied to clipboard!');
         });
     } else {
         const textArea = document.createElement("textarea");
@@ -594,7 +726,7 @@ function copyCurrentUrl() {
         textArea.select();
         try {
             document.execCommand('copy');
-            alert("Link copied to clipboard!");
+            showToast('Link copied to clipboard!');
         } catch (error) {
             console.error("Failed to copy URL", error);
         }
@@ -647,8 +779,8 @@ async function startDownloadInUI(url, filename, size) {
     if (speedText) speedText.innerText = `0 MB/s`;
     
     if (pauseBtn) {
-        pauseBtn.innerHTML = `<i class="bi bi-pause me-1"></i> Pause`;
-        pauseBtn.className = 'btn btn-warning';
+        pauseBtn.innerHTML = `<span class="material-symbols-rounded">pause</span> Pause`;
+        pauseBtn.className = 'btn btn-surface';
         pauseBtn.disabled = false;
     }
     
@@ -735,8 +867,8 @@ function toggleDownloadPause() {
     let btn = document.getElementById('pauseResumeBtn');
     if (downloadState.paused) {
         downloadState.paused = false;
-        btn.innerHTML = `<i class="bi bi-pause me-1"></i> Pause`;
-        btn.className = 'btn btn-warning';
+        btn.innerHTML = `<span class="material-symbols-rounded">pause</span> Pause`;
+        btn.className = 'btn btn-surface';
         document.getElementById('downloadStatusText').innerText = `Downloading ${downloadState.filename}...`;
         fetchDownloadChunk();
     } else {
@@ -744,8 +876,8 @@ function toggleDownloadPause() {
         if (currentDownloadController) {
             currentDownloadController.abort();
         }
-        btn.innerHTML = `<i class="bi bi-play me-1"></i> Resume`;
-        btn.className = 'btn btn-success';
+        btn.innerHTML = `<span class="material-symbols-rounded">play_arrow</span> Resume`;
+        btn.className = 'btn btn-premium';
         document.getElementById('downloadStatusText').innerText = `Paused ${downloadState.filename}...`;
         document.getElementById('downloadSpeed').innerText = `0 MB/s`;
     }
@@ -914,7 +1046,7 @@ function appendChatMessage(chat, scroll = true) {
                     ${chat.message}
                 </div>
             </div>
-            ${isMe ? `<button class="btn btn-sm btn-link text-danger shadow-none p-1 ms-1 mb-1" onclick="deleteChat(${chat.id})"><i class="bi bi-trash"></i></button>` : ''}
+            ${isMe ? `<button class="file-action-btn" onclick="deleteChat(${chat.id})" style="width:28px;height:28px;"><span class="material-symbols-rounded" style="font-size:16px;color:var(--md-sys-color-error);">delete</span></button>` : ''}
         </div>
     `;
     
@@ -989,15 +1121,15 @@ async function loadClipboards() {
         const safeContent = escapeHtml(item.content);
         const encodedContent = encodeURIComponent(item.content);
         container.innerHTML += `
-            <div class="mb-3 p-3 bg-white rounded border">
+            <div class="mb-3 p-3 rounded-3" style="background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant);">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <small class="text-muted">${escapeHtml(item.senderIp) || 'Unknown'} - ${time}</small>
+                    <small style="color: var(--md-sys-color-on-surface-variant);">${escapeHtml(item.senderIp) || 'Unknown'} - ${time}</small>
                     <div>
-                        <button class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" data-clipboard="${encodedContent}" onclick="copyClipboardItem(this)"><i class="bi bi-clipboard"></i> Copy</button>
-                        <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteClipboard(${item.id})"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" data-clipboard="${encodedContent}" onclick="copyClipboardItem(this)"><span class="material-symbols-rounded" style="font-size:14px;">content_copy</span> Copy</button>
+                        <button class="file-action-btn" style="width:28px;height:28px;display:inline-flex;" onclick="deleteClipboard(${item.id})"><span class="material-symbols-rounded" style="font-size:16px;color:var(--md-sys-color-error);">delete</span></button>
                     </div>
                 </div>
-                <div class="text-dark" style="white-space: pre-wrap; word-wrap: break-word;">${safeContent}</div>
+                <div style="color: var(--md-sys-color-on-surface); white-space: pre-wrap; word-wrap: break-word;">${safeContent}</div>
             </div>
         `;
     });
@@ -1033,7 +1165,7 @@ async function clearAllClipboards() {
 function copyToClipboard(btn, text) {
     const onSuccess = () => {
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="bi bi-check2"></i> Copied!';
+        btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:14px;">check</span> Copied!';
         btn.classList.replace('btn-outline-secondary', 'btn-success');
         btn.classList.add('text-white');
         setTimeout(() => {
@@ -1066,7 +1198,7 @@ function copyToClipboard(btn, text) {
 let petalInterval = null;
 
 function managePetals(themeName) {
-    if (themeName === 'girl') {
+    if (themeName === 'blossom') {
         if (!petalInterval) {
             petalInterval = setInterval(createPetal, 400);
         }
@@ -1123,7 +1255,7 @@ function applyCustomBg() {
             localStorage.setItem('syncBgRepeat', bgRepeat);
         } catch (e) {
             console.warn("Could not save background to localStorage, possibly too large.", e);
-            alert("Image is too large to save permanently. It will only apply for this session.");
+            showToast('Image too large to save permanently');
         }
         
         document.documentElement.style.setProperty('--body-bg-image', `url('${bgUrl}')`);
@@ -1148,7 +1280,7 @@ function applyCustomBg() {
     } else if (urlInput) {
         saveAndApply(urlInput);
     } else {
-        alert("Please provide an image URL or upload a file.");
+        showToast('Please provide an image URL or upload a file');
     }
 }
 
