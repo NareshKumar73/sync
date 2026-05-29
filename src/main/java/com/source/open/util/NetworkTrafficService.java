@@ -67,4 +67,19 @@ public class NetworkTrafficService {
             }
         }
     }
+
+    public void clearAllTraffic() {
+        buffer.clear();
+        repository.deleteAll();
+    }
+
+    public void clearTrafficById(Long id) {
+        repository.findById(id).ifPresent(t -> {
+            if (t.getIpAddress() != null) {
+                buffer.remove(t.getIpAddress());
+            }
+            repository.delete(t);
+        });
+    }
 }
+

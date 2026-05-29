@@ -117,18 +117,23 @@
 
         <!-- Transfer History Table -->
         <div class="surface-panel p-4 animate-fade-in" style="animation-delay: 0.2s;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
                 <h4 class="text-primary fw-bold mb-0">
                     <span class="material-symbols-rounded me-2">history</span>Transfer History
                 </h4>
-                <ul class="nav nav-pills" id="historyTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active btn-sm py-1 px-3" id="consolidated-tab" data-bs-toggle="tab" data-bs-target="#consolidated" type="button" role="tab" aria-controls="consolidated" aria-selected="true">Consolidated</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link btn-sm py-1 px-3" id="raw-tab" data-bs-toggle="tab" data-bs-target="#raw" type="button" role="tab" aria-controls="raw" aria-selected="false">Raw Logs</button>
-                    </li>
-                </ul>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <ul class="nav nav-pills" id="historyTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active btn-sm py-1 px-3" id="consolidated-tab" data-bs-toggle="tab" data-bs-target="#consolidated" type="button" role="tab" aria-controls="consolidated" aria-selected="true">Consolidated</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link btn-sm py-1 px-3" id="raw-tab" data-bs-toggle="tab" data-bs-target="#raw" type="button" role="tab" aria-controls="raw" aria-selected="false">Raw Logs</button>
+                        </li>
+                    </ul>
+                    <button class="btn btn-surface btn-sm border d-inline-flex align-items-center gap-1" onclick="clearAllHistory()" th:if="${historyList != null && !historyList.empty}">
+                        <span class="material-symbols-rounded text-danger" style="font-size:18px;">delete_sweep</span> Clear History
+                    </button>
+                </div>
             </div>
 
             <div class="tab-content" id="historyTabContent">
@@ -184,6 +189,7 @@
                                     <th scope="col">Filename</th>
                                     <th scope="col">IP Address</th>
                                     <th scope="col">Size</th>
+                                    <th scope="col" style="width: 80px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -198,6 +204,11 @@
                                     <td class="text-break fw-medium" th:text="${history.filename}">file.txt</td>
                                     <td class="text-muted" th:text="${history.ipAddress}">192.168.1.1</td>
                                     <td class="text-nowrap" th:text="${history.formattedSize}">1.5 MB</td>
+                                    <td>
+                                        <button class="file-action-btn border-0 bg-transparent text-danger p-1" th:onclick="'deleteHistoryEntry(' + ${history.id} + ')'" title="Delete record">
+                                            <span class="material-symbols-rounded" style="font-size:18px;">delete</span>
+                                        </button>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -208,9 +219,14 @@
 
         <!-- Tomcat Network Traffic -->
         <div class="surface-panel p-4 mt-4 animate-fade-in" style="animation-delay: 0.3s;">
-            <h4 class="mb-4 text-primary fw-bold">
-                <span class="material-symbols-rounded me-2">router</span>Tomcat Network Traffic
-            </h4>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="text-primary fw-bold mb-0">
+                    <span class="material-symbols-rounded me-2">router</span>Tomcat Network Traffic
+                </h4>
+                <button class="btn btn-surface btn-sm border d-inline-flex align-items-center gap-1" onclick="clearAllTraffic()" th:if="${networkTrafficList != null && !networkTrafficList.empty}">
+                    <span class="material-symbols-rounded text-danger" style="font-size:18px;">delete_sweep</span> Clear Traffic
+                </button>
+            </div>
 
             <div th:if="${networkTrafficList == null || networkTrafficList.empty}" class="text-center py-5 mt-3">
                 <span class="material-symbols-rounded" style="font-size: 72px; color: var(--md-sys-color-outline-variant);">router</span>
@@ -226,6 +242,7 @@
                             <th scope="col">Bytes Sent</th>
                             <th scope="col">Bytes Received</th>
                             <th scope="col">Last Active</th>
+                            <th scope="col" style="width: 80px;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -234,6 +251,11 @@
                             <td class="text-info fw-bold" th:text="${traffic.bytesSentFormatted}">0 B</td>
                             <td class="text-success fw-bold" th:text="${traffic.bytesReceivedFormatted}">0 B</td>
                             <td class="text-muted" th:text="${traffic.lastActive != null ? #temporals.format(traffic.lastActive, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}">2026-05-20 12:00:00</td>
+                            <td>
+                                <button class="file-action-btn border-0 bg-transparent text-danger p-1" th:onclick="'deleteTrafficEntry(' + ${traffic.id} + ')'" title="Delete record">
+                                    <span class="material-symbols-rounded" style="font-size:18px;">delete</span>
+                                </button>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -253,6 +275,85 @@
         </a>
     </nav>
 
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
     <script src="../static/bootstrap/bootstrap.bundle.js" th:src="@{/bootstrap/bootstrap.bundle.js}"></script>
+    <script>
+        function showToast(message, duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'toast-m3';
+            toast.innerHTML = `<span class="material-symbols-rounded" style="font-size:20px;">info</span> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(40px)';
+                toast.style.transition = 'all 300ms ease';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        async function clearAllHistory() {
+            if (!confirm('Are you sure you want to clear all transfer history? This action cannot be undone.')) return;
+            try {
+                const res = await fetch('/api/history', { method: 'DELETE' });
+                if (res.ok) {
+                    showToast('Transfer history cleared successfully');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('Failed to clear transfer history');
+                }
+            } catch (e) {
+                showToast('An error occurred');
+            }
+        }
+
+        async function deleteHistoryEntry(id) {
+            if (!confirm('Are you sure you want to delete this transfer history record?')) return;
+            try {
+                const res = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showToast('Record deleted successfully');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('Failed to delete record');
+                }
+            } catch (e) {
+                showToast('An error occurred');
+            }
+        }
+
+        async function clearAllTraffic() {
+            if (!confirm('Are you sure you want to clear all network traffic statistics?')) return;
+            try {
+                const res = await fetch('/api/traffic', { method: 'DELETE' });
+                if (res.ok) {
+                    showToast('Network traffic statistics cleared successfully');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('Failed to clear network traffic statistics');
+                }
+            } catch (e) {
+                showToast('An error occurred');
+            }
+        }
+
+        async function deleteTrafficEntry(id) {
+            if (!confirm('Are you sure you want to delete network traffic stats for this IP?')) return;
+            try {
+                const res = await fetch(`/api/traffic/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showToast('Traffic statistics deleted for this IP');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('Failed to delete traffic statistics');
+                }
+            } catch (e) {
+                showToast('An error occurred');
+            }
+        }
+    </script>
 </body>
 </html>

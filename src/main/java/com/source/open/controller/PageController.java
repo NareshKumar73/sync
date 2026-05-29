@@ -116,6 +116,7 @@ public class PageController {
 		List<com.source.open.payload.NetworkTraffic> networkTrafficList = networkTrafficRepository.findAll();
 		List<Map<String, Object>> networkTrafficFormatted = networkTrafficList.stream().map(t -> {
 			Map<String, Object> map = new java.util.HashMap<>();
+			map.put("id", t.getId());
 			map.put("ipAddress", t.getIpAddress());
 			map.put("bytesSentFormatted", formatSize(t.getBytesSent() != null ? t.getBytesSent() : 0));
 			map.put("bytesReceivedFormatted", formatSize(t.getBytesReceived() != null ? t.getBytesReceived() : 0));
