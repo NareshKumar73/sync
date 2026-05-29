@@ -473,9 +473,22 @@ async function fetchMetrics() {
 }
 
 // Network Nodes Management
+let nodesInterval = null;
+
 document.getElementById('networkModal').addEventListener('show.bs.modal', function () {
     loadNodes();
     loadConflicts();
+    nodesInterval = setInterval(() => {
+        loadNodes();
+        loadConflicts();
+    }, 5000);
+});
+
+document.getElementById('networkModal').addEventListener('hide.bs.modal', function () {
+    if (nodesInterval) {
+        clearInterval(nodesInterval);
+        nodesInterval = null;
+    }
 });
 
 async function loadNodes() {
@@ -539,8 +552,14 @@ async function deleteNode(id) {
 
 // Sync Controls
 async function triggerSync() {
-    await fetch('/api/sync/trigger', { method: 'POST' });
-    showToast('Sync triggered successfully');
+    showToast('Sync in progress...');
+    try {
+        await fetch('/api/sync/trigger', { method: 'POST' });
+        showToast('Sync completed successfully');
+        loadNodes();
+    } catch (e) {
+        showToast('Sync failed');
+    }
 }
 
 async function toggleAutoSync() {

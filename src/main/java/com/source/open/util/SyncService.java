@@ -1,15 +1,19 @@
 package com.source.open.util;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -55,42 +59,48 @@ public class SyncService {
     }
 
     public void triggerSync() {
-        List<InstanceNode> nodes = nodeRepository.findAll();
-        List<FileMeta> localFiles = fs.listDirectoryRecursive();
+        try {
+            List<InstanceNode> nodes = nodeRepository.findAll();
+            List<FileMeta> localFiles = fs.listDirectoryRecursive();
 
-        // Use relative path + name as key for local files to easily find matches
-        Map<String, FileMeta> localFilesMap = localFiles.stream()
-                .collect(Collectors.toMap(f -> f.getRelativePath(), f -> f));
+            // Use relative path + name as key for local files to easily find matches
+            Map<String, FileMeta> localFilesMap = localFiles.stream()
+                    .collect(Collectors.toMap(f -> f.getRelativePath(), f -> f));
 
-        for (InstanceNode node : nodes) {
-            try {
-                String baseUrl = "http://" + node.getIpAddress() + ":" + node.getPort();
+            for (InstanceNode node : nodes) {
+                try {
+                    String baseUrl = "http://" + node.getIpAddress() + ":" + node.getPort();
 
-                // test connection
-                ResponseEntity<String> pingResponse = restClient.get().uri(baseUrl + "/api/ping").retrieve()
-                        .toEntity(String.class);
-                if (!pingResponse.getStatusCode().is2xxSuccessful()) {
-                    continue;
+                    // test connection
+                    ResponseEntity<String> pingResponse = restClient.get().uri(baseUrl + "/api/ping").retrieve()
+                            .toEntity(String.class);
+                    if (!pingResponse.getStatusCode().is2xxSuccessful()) {
+                        node.setIsWorking(false);
+                        nodeRepository.save(node);
+                        continue;
+                    }
+
+                    node.setIsWorking(true);
+                    node.setLastActive(LocalDateTime.now());
+                    nodeRepository.save(node);
+
+                    FileListJson remoteFiles = restClient.get()
+                            .uri(baseUrl + "/files/recursive")
+                            .retrieve()
+                            .body(FileListJson.class);
+
+                    if (remoteFiles != null && remoteFiles.getFiles() != null) {
+                        processRemoteFiles(baseUrl, remoteFiles.getFiles(), localFilesMap);
+                    }
+
+                } catch (Exception e) {
+                    log.warn("Failed to sync with node {}:{}", node.getIpAddress(), node.getPort());
+                    node.setIsWorking(false);
+                    nodeRepository.save(node);
                 }
-
-                node.setIsWorking(true);
-                node.setLastActive(LocalDateTime.now());
-                nodeRepository.save(node);
-
-                FileListJson remoteFiles = restClient.get()
-                        .uri(baseUrl + "/files/recursive")
-                        .retrieve()
-                        .body(FileListJson.class);
-
-                if (remoteFiles != null && remoteFiles.getFiles() != null) {
-                    processRemoteFiles(baseUrl, remoteFiles.getFiles(), localFilesMap);
-                }
-
-            } catch (Exception e) {
-                log.warn("Failed to sync with node {}:{}", node.getIpAddress(), node.getPort());
-                node.setIsWorking(false);
-                nodeRepository.save(node);
             }
+        } finally {
+            cleanTempDir();
         }
     }
 
@@ -130,38 +140,108 @@ public class SyncService {
     private void downloadFile(String baseUrl, FileMeta remote) {
         String downloadUrl = baseUrl + remote.getUrl();
         Path dest = fs.getAppDir().resolve(remote.getRelativePath());
+        Path tempDir = fs.getData().resolve("temp");
+        Path tempFile = tempDir.resolve(remote.getRelativePath() + ".part");
 
         try {
-            // Ensure parent directory exists
+            // Ensure parent directory exists for both dest and tempFile
             Files.createDirectories(dest.getParent());
+            Files.createDirectories(tempFile.getParent());
 
-            restClient.get()
-                    .uri(downloadUrl)
-                    .exchange((request, response) -> {
-                        if (response.getStatusCode().is2xxSuccessful()) {
-                            try (InputStream is = response.getBody()) {
-                                Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
-                                log.info("Downloaded missing file: " + remote.getRelativePath());
-                                
-                                try {
-                                    com.source.open.payload.TransferHistory th = new com.source.open.payload.TransferHistory();
-                                    th.setType("SYNC_JOB");
-                                    th.setFilename(remote.getRelativePath());
-                                    // Extract IP from baseUrl (e.g. "http://192.168.1.10:8080")
-                                    String ip = baseUrl.replace("http://", "").replace("https://", "").split(":")[0];
-                                    th.setIpAddress(ip);
-                                    th.setFileSize(remote.getSizeInBytes());
-                                    th.setTimestamp(LocalDateTime.now());
-                                    transferHistoryRepo.save(th);
-                                } catch (Exception ex) {
-                                    log.error("Failed to log sync transfer history", ex);
+            long existingLength = 0;
+            if (Files.exists(tempFile)) {
+                existingLength = Files.size(tempFile);
+                if (existingLength >= remote.getSizeInBytes()) {
+                    Files.delete(tempFile);
+                    existingLength = 0;
+                }
+            }
+
+            final long startByte = existingLength;
+            var requestHeadersSpec = restClient.get().uri(downloadUrl);
+            if (startByte > 0) {
+                requestHeadersSpec.header("Range", "bytes=" + startByte + "-");
+            }
+
+            requestHeadersSpec.exchange((request, response) -> {
+                int status = response.getStatusCode().value();
+                if (status == 200 || status == 206) {
+                    boolean append = (status == 206 && startByte > 0);
+                    try (InputStream is = response.getBody();
+                         OutputStream os = Files.newOutputStream(tempFile, 
+                             StandardOpenOption.CREATE, 
+                             append ? StandardOpenOption.APPEND : StandardOpenOption.TRUNCATE_EXISTING, 
+                             StandardOpenOption.WRITE)) {
+                        is.transferTo(os);
+                    }
+
+                    long finalSize = Files.size(tempFile);
+                    if (finalSize == remote.getSizeInBytes()) {
+                        try {
+                            Files.move(tempFile, dest, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                        } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                            Files.move(tempFile, dest, StandardCopyOption.REPLACE_EXISTING);
+                        }
+
+                        try {
+                            Files.setLastModifiedTime(dest, java.nio.file.attribute.FileTime.fromMillis(remote.getLastModifiedEpoch()));
+                        } catch (Exception ex) {
+                            log.error("Failed to set last modified time for " + dest, ex);
+                        }
+
+                        log.info("Downloaded missing file: " + remote.getRelativePath());
+                        
+                        try {
+                            com.source.open.payload.TransferHistory th = new com.source.open.payload.TransferHistory();
+                            th.setType("SYNC_JOB");
+                            th.setFilename(remote.getRelativePath());
+                            // Extract IP from baseUrl
+                            String ip = baseUrl.replace("http://", "").replace("https://", "").split(":")[0];
+                            th.setIpAddress(ip);
+                            th.setFileSize(remote.getSizeInBytes());
+                            th.setTimestamp(LocalDateTime.now());
+                            transferHistoryRepo.save(th);
+                        } catch (Exception ex) {
+                            log.error("Failed to log sync transfer history", ex);
+                        }
+                    } else {
+                        log.warn("Size mismatch for downloaded file {}: expected {} bytes, got {} bytes", 
+                            remote.getRelativePath(), remote.getSizeInBytes(), finalSize);
+                    }
+                } else {
+                    log.error("Failed to download file " + remote.getRelativePath() + ", HTTP status: " + status);
+                    if (status == 416) {
+                        try {
+                            Files.deleteIfExists(tempFile);
+                        } catch (Exception ignored) {}
+                    }
+                }
+                return null;
+            });
+        } catch (Exception e) {
+            log.error("Failed to download file " + remote.getRelativePath(), e);
+        }
+    }
+
+    private void cleanTempDir() {
+        try {
+            Path tempDir = fs.getData().resolve("temp");
+            if (Files.exists(tempDir)) {
+                try (Stream<Path> stream = Files.walk(tempDir)) {
+                    List<Path> paths = stream.sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+                    for (Path p : paths) {
+                        if (Files.isDirectory(p)) {
+                            try (Stream<Path> s = Files.list(p)) {
+                                if (s.findAny().isEmpty()) {
+                                    Files.delete(p);
                                 }
                             }
                         }
-                        return null;
-                    });
+                    }
+                }
+            }
         } catch (Exception e) {
-            log.error("Failed to download file " + remote.getRelativePath(), e);
+            log.warn("Failed to clean empty temp directories", e);
         }
     }
 
