@@ -26,6 +26,15 @@
             </button>
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                 <div class="d-flex flex-wrap gap-2 gap-lg-3 align-items-center mt-3 mt-lg-0 justify-content-start justify-content-lg-end py-2 py-lg-0">
+                    <!-- Sync Controls -->
+                    <div class="form-check form-switch me-lg-2 d-flex align-items-center py-1">
+                        <input class="form-check-input shadow-none" type="checkbox" id="autoSyncToggle" onchange="toggleAutoSync()">
+                        <label class="form-check-label ms-2 small fw-medium text-nowrap" for="autoSyncToggle" style="color: var(--md-sys-color-on-surface-variant);">Auto-Sync</label>
+                    </div>
+                    <button class="btn btn-surface btn-sm" onclick="triggerSync()" title="Sync Now">
+                        <span class="material-symbols-rounded">sync</span> Sync
+                    </button>
+
                     <!-- System Dropdown -->
                     <div class="dropdown">
                         <button class="btn btn-surface btn-sm dropdown-toggle" type="button" id="systemDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="System Settings">
@@ -38,6 +47,16 @@
                             <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#speedTestModal"><span class="material-symbols-rounded me-2">speed</span>Speed Test</a></li>
                         </ul>
                     </div>
+
+                    <button class="btn btn-surface btn-sm" onclick="showQrCode()" title="QR Code">
+                        <span class="material-symbols-rounded">qr_code_2</span> QR
+                    </button>
+                    <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#chatModal" title="Chat">
+                        <span class="material-symbols-rounded">chat_bubble</span> Chat
+                    </button>
+                    <button class="btn btn-surface btn-sm" data-bs-toggle="modal" data-bs-target="#clipboardModal" title="Clipboard">
+                        <span class="material-symbols-rounded">content_paste</span> Clipboard
+                    </button>
 
                     <!-- Theme Dropdown -->
                     <div class="dropdown">
