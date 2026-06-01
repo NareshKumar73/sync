@@ -29,6 +29,25 @@
                     <a class="btn btn-surface btn-sm" th:href="@{/}" title="Home">
                         <span class="material-symbols-rounded">home</span> Home
                     </a>
+                    
+                    <!-- System Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-surface btn-sm dropdown-toggle" type="button" id="systemDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="System Settings" data-bs-auto-close="outside">
+                            <span class="material-symbols-rounded">dns</span> System
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 surface-panel" aria-labelledby="systemDropdown">
+                            <li class="px-3 py-2 bg-light rounded mx-2 mb-2 mt-2">
+                                <label class="form-label small fw-bold mb-1" style="color: var(--md-sys-color-on-surface-variant);"><span class="material-symbols-rounded me-1" style="font-size: 16px; vertical-align: text-bottom;">language</span>UI Timezone</label>
+                                <select id="timezoneSelect" class="form-select form-select-sm shadow-none border-secondary" onchange="formatHistoryDates()">
+                                    <option value="Asia/Kolkata">IST (Kolkata)</option>
+                                    <option value="UTC">GMT/UTC</option>
+                                    <option value="America/New_York">EST (New York)</option>
+                                    <option value="Europe/London">GMT (London)</option>
+                                    <option value="local">Local Browser Time</option>
+                                </select>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -157,7 +176,7 @@
                             </thead>
                             <tbody>
                                 <tr th:each="history : ${historyList}">
-                                    <td class="text-nowrap" th:text="${#temporals.format(history.timestamp, 'yyyy-MM-dd HH:mm:ss')}">2026-05-20 12:00:00</td>
+                                    <td class="text-nowrap history-date-display" th:data-date="${history.timestamp}" th:text="${#temporals.format(history.timestamp, 'yyyy-MM-dd HH:mm:ss')}">2026-05-20 12:00:00</td>
                                     <td>
                                         <span th:if="${history.type == 'MANUAL_UPLOAD'}" class="badge badge-m3 badge-upload"><span class="material-symbols-rounded" style="font-size:14px;">cloud_upload</span> Upload</span>
                                         <span th:if="${history.type == 'MANUAL_DOWNLOAD'}" class="badge badge-m3 badge-download"><span class="material-symbols-rounded" style="font-size:14px;">cloud_download</span> Download</span>
@@ -194,7 +213,7 @@
                             </thead>
                             <tbody>
                                 <tr th:each="history : ${rawHistoryList}">
-                                    <td class="text-nowrap" th:text="${#temporals.format(history.timestamp, 'yyyy-MM-dd HH:mm:ss')}">2026-05-20 12:00:00</td>
+                                    <td class="text-nowrap history-date-display" th:data-date="${history.timestamp}" th:text="${#temporals.format(history.timestamp, 'yyyy-MM-dd HH:mm:ss')}">2026-05-20 12:00:00</td>
                                     <td>
                                         <span th:if="${history.type == 'MANUAL_UPLOAD'}" class="badge badge-m3 badge-upload"><span class="material-symbols-rounded" style="font-size:14px;">cloud_upload</span> Upload</span>
                                         <span th:if="${history.type == 'MANUAL_DOWNLOAD'}" class="badge badge-m3 badge-download"><span class="material-symbols-rounded" style="font-size:14px;">cloud_download</span> Download</span>
@@ -250,7 +269,7 @@
                             <td class="fw-medium" th:text="${traffic.ipAddress}">192.168.1.1</td>
                             <td class="text-info fw-bold" th:text="${traffic.bytesSentFormatted}">0 B</td>
                             <td class="text-success fw-bold" th:text="${traffic.bytesReceivedFormatted}">0 B</td>
-                            <td class="text-muted" th:text="${traffic.lastActive != null ? #temporals.format(traffic.lastActive, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}">2026-05-20 12:00:00</td>
+                            <td class="text-muted history-date-display" th:data-date="${traffic.lastActive}" th:text="${traffic.lastActive != null ? #temporals.format(traffic.lastActive, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}">2026-05-20 12:00:00</td>
                             <td>
                                 <button class="file-action-btn border-0 bg-transparent text-danger p-1" th:onclick="'deleteTrafficEntry(' + ${traffic.id} + ')'" title="Delete record">
                                     <span class="material-symbols-rounded" style="font-size:18px;">delete</span>
@@ -354,6 +373,40 @@
                 showToast('An error occurred');
             }
         }
+        function formatHistoryDates() {
+            const tzSelect = document.getElementById('timezoneSelect');
+            if (!tzSelect) return;
+            const tz = tzSelect.value;
+            localStorage.setItem('fileTimezone', tz);
+            
+            document.querySelectorAll('.history-date-display').forEach(el => {
+                const dateStr = el.getAttribute('data-date');
+                if (!dateStr || dateStr === 'null') return;
+                try {
+                    let options = {
+                        year: 'numeric', month: 'short', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+                    };
+                    if (tz !== 'local') {
+                        options.timeZone = tz;
+                    }
+                    // For Spring Boot LocalDateTime: 2026-05-20T12:00:00
+                    const d = new Date(dateStr);
+                    el.innerText = new Intl.DateTimeFormat('en-US', options).format(d);
+                } catch(e) {
+                    // Fallback to original text if error
+                }
+            });
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            let savedTz = localStorage.getItem('fileTimezone') || 'Asia/Kolkata';
+            let tzSelect = document.getElementById('timezoneSelect');
+            if (tzSelect) {
+                tzSelect.value = savedTz;
+                formatHistoryDates();
+            }
+        });
     </script>
 </body>
 </html>

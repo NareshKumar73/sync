@@ -35,12 +35,48 @@ public class SyncService {
     private final FileService fs;
     private final InstanceNodeRepository nodeRepository;
     private final com.source.open.util.TransferHistoryRepository transferHistoryRepo;
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient = createRestClientWithTimeout();
 
     private boolean isAutoSyncEnabled = false;
 
     // A map to store conflicts: key is file relative path, value is remote FileMeta
     private final ConcurrentHashMap<String, FileMeta> syncConflicts = new ConcurrentHashMap<>();
+
+    private static RestClient createRestClientWithTimeout() {
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(2000);
+        factory.setReadTimeout(2000);
+        return RestClient.builder().requestFactory(factory).build();
+    }
+
+    @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
+    public void monitorNodeStatuses() {
+        List<InstanceNode> nodes = nodeRepository.findAll();
+        for (InstanceNode node : nodes) {
+            boolean isWorking = testConnection(node.getIpAddress(), node.getPort());
+            if (node.getIsWorking() == null || node.getIsWorking() != isWorking) {
+                node.setIsWorking(isWorking);
+                if (isWorking) {
+                    node.setLastActive(LocalDateTime.now());
+                }
+                nodeRepository.save(node);
+                log.info("Node {}:{} changed status to {}", node.getIpAddress(), node.getPort(), isWorking ? "ONLINE" : "OFFLINE");
+            }
+        }
+    }
+
+    private boolean testConnection(String ip, Integer port) {
+        try {
+            String url = "http://" + ip + ":" + port + "/api/ping";
+            ResponseEntity<String> response = restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .toEntity(String.class);
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
     @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.HOURS)
     public void autoSync() {
@@ -72,9 +108,7 @@ public class SyncService {
                     String baseUrl = "http://" + node.getIpAddress() + ":" + node.getPort();
 
                     // test connection
-                    ResponseEntity<String> pingResponse = restClient.get().uri(baseUrl + "/api/ping").retrieve()
-                            .toEntity(String.class);
-                    if (!pingResponse.getStatusCode().is2xxSuccessful()) {
+                    if (!testConnection(node.getIpAddress(), node.getPort())) {
                         node.setIsWorking(false);
                         nodeRepository.save(node);
                         continue;
@@ -126,9 +160,9 @@ public class SyncService {
                 // We don't have it, download it
                 downloadFile(baseUrl, remote);
             } else {
-                // We have it, check size and modified date
-                if (local.getSizeInBytes() != remote.getSizeInBytes()
-                        || local.getLastModifiedEpoch() < remote.getLastModifiedEpoch()) {
+                // We have it, check size and modified date with 2-second tolerance for FS precision loss
+                long timeDiff = remote.getLastModifiedEpoch() - local.getLastModifiedEpoch();
+                if (local.getSizeInBytes() != remote.getSizeInBytes() || timeDiff > 2000) {
                     // Conflict found. Do not overwrite. Add to conflicts.
                     syncConflicts.put(relativePath, remote);
                     log.info("Conflict found for file: {}. Ignoring remote file.", relativePath);

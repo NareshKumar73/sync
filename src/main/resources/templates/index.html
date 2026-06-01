@@ -45,6 +45,43 @@
                             <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#systemModal"><span class="material-symbols-rounded me-2">monitoring</span>System Status</a></li>
                             <li><a class="dropdown-item fw-medium" href="#" onclick="showSystemIps()"><span class="material-symbols-rounded me-2">laptop_mac</span>System IPs</a></li>
                             <li><a class="dropdown-item fw-medium" href="#" data-bs-toggle="modal" data-bs-target="#speedTestModal"><span class="material-symbols-rounded me-2">speed</span>Speed Test</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="px-2 pb-2">
+                                <div class="tz-picker">
+                                    <div class="tz-picker-header">
+                                        <div class="tz-picker-clock-wrap">
+                                            <span class="material-symbols-rounded icon-filled tz-picker-icon">schedule</span>
+                                            <div class="tz-picker-clock" id="tzLiveClock">--:--:-- --</div>
+                                        </div>
+                                        <div class="tz-picker-zone-label" id="tzZoneLabel">IST</div>
+                                    </div>
+                                    <div class="tz-picker-chips" id="tzChipGroup" role="radiogroup" aria-label="Timezone">
+                                        <button class="tz-chip active" data-tz="Asia/Kolkata" data-label="IST" onclick="selectTimezone(this)">
+                                            <span class="material-symbols-rounded">sunny</span> IST
+                                        </button>
+                                        <button class="tz-chip" data-tz="UTC" data-label="UTC" onclick="selectTimezone(this)">
+                                            <span class="material-symbols-rounded">public</span> UTC
+                                        </button>
+                                        <button class="tz-chip" data-tz="America/New_York" data-label="EST" onclick="selectTimezone(this)">
+                                            <span class="material-symbols-rounded">location_city</span> EST
+                                        </button>
+                                        <button class="tz-chip" data-tz="Europe/London" data-label="GMT" onclick="selectTimezone(this)">
+                                            <span class="material-symbols-rounded">partly_cloudy_day</span> GMT
+                                        </button>
+                                        <button class="tz-chip" data-tz="local" data-label="Local" onclick="selectTimezone(this)">
+                                            <span class="material-symbols-rounded">my_location</span> Local
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Hidden select for JS compatibility -->
+                                <select id="timezoneSelect" class="d-none" onchange="formatDates()">
+                                    <option value="Asia/Kolkata">IST (Kolkata)</option>
+                                    <option value="UTC">GMT/UTC</option>
+                                    <option value="America/New_York">EST (New York)</option>
+                                    <option value="Europe/London">GMT (London)</option>
+                                    <option value="local">Local Browser Time</option>
+                                </select>
+                            </li>
                         </ul>
                     </div>
 
@@ -130,7 +167,7 @@
                 <input type="text" id="searchInput" class="form-control surface-input shadow-none" placeholder="Search files..." onkeyup="filterFiles()">
             </div>
             <div class="d-flex align-items-center gap-2">
-                <span class="small fw-medium" style="color: var(--md-sys-color-on-surface-variant);">Sort by:</span>
+                <span class="small fw-medium ms-2" style="color: var(--md-sys-color-on-surface-variant);">Sort by:</span>
                 <select id="sortSelect" class="form-select surface-input form-select-sm shadow-none" style="width: auto;" onchange="sortFiles()">
                     <option value="name">Name (A-Z)</option>
                     <option value="name-desc">Name (Z-A)</option>
@@ -184,7 +221,7 @@
                                 <div class="file-meta">
                                     <span th:if="${!file.directory}" th:text="${file.size}">2 MB</span> 
                                     <span th:if="${!file.directory}">•</span> 
-                                    <span th:text="${file.lastModified}">Today</span>
+                                    <span th:text="${file.lastModified}" class="file-date-display">Today</span>
                                 </div>
                             </div>
                         </div>

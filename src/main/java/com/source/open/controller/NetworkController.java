@@ -32,7 +32,14 @@ public class NetworkController {
 	private final NetworkUtil nu;
 	private final InstanceNodeRepository nodeRepository;
 	private final SyncService syncService;
-	private final RestClient restClient = RestClient.create();
+	private final RestClient restClient = createRestClientWithTimeout();
+
+	private static RestClient createRestClientWithTimeout() {
+		org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+		factory.setConnectTimeout(2000);
+		factory.setReadTimeout(2000);
+		return RestClient.builder().requestFactory(factory).build();
+	}
 
 	@GetMapping("/ip")
 	public ResponseEntity<Map<String, String>> getLocalIP() {

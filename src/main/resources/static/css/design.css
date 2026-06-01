@@ -1297,6 +1297,115 @@ body {
 }
 
 /* ===================================================================
+   24b. TIMEZONE PICKER (M3 Expressive)
+   =================================================================== */
+.tz-picker {
+    background: var(--md-sys-color-surface-container-low);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-md);
+    padding: 12px;
+    min-width: 240px;
+}
+
+.tz-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.tz-picker-clock-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tz-picker-icon {
+    font-size: 22px;
+    color: var(--md-sys-color-primary);
+    animation: tz-pulse 2s ease-in-out infinite;
+}
+
+@keyframes tz-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+}
+
+.tz-picker-clock {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--md-sys-color-on-surface);
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.tz-picker-zone-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--md-sys-color-primary);
+    background: var(--md-sys-color-primary-container);
+    padding: 3px 10px;
+    border-radius: var(--md-sys-shape-full);
+}
+
+.tz-picker-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tz-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-full);
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-emphasized);
+    white-space: nowrap;
+    outline: none;
+}
+
+.tz-chip .material-symbols-rounded {
+    font-size: 15px;
+    transition: color var(--md-sys-motion-duration-short) ease;
+}
+
+.tz-chip:hover {
+    background: var(--md-sys-elevation-2);
+    border-color: var(--md-sys-color-outline);
+    color: var(--md-sys-color-on-surface);
+}
+
+.tz-chip:active {
+    transform: scale(0.95);
+}
+
+.tz-chip.active {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    border-color: var(--md-sys-color-primary-container);
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.tz-chip.active .material-symbols-rounded {
+    color: var(--md-sys-color-primary);
+}
+
+/* ===================================================================
    25. BADGES (M3 Style)
    =================================================================== */
 .badge.badge-m3 {

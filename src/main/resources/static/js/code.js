@@ -18,6 +18,25 @@ function showToast(message, duration = 3000) {
     }, duration);
 }
 
+// Global Timezone Formatter
+function formatDateByTimezone(epochOrDateString) {
+    if (!epochOrDateString) return 'Unknown';
+    const tz = localStorage.getItem('fileTimezone') || 'Asia/Kolkata';
+    try {
+        let options = {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+        };
+        if (tz !== 'local') {
+            options.timeZone = tz;
+        }
+        const d = new Date(epochOrDateString);
+        return new Intl.DateTimeFormat('en-US', options).format(d);
+    } catch(e) {
+        return new Date(epochOrDateString).toLocaleString();
+    }
+}
+
 // File Type Icon Assignment
 function assignFileIconClasses() {
     const fileItems = document.querySelectorAll('.file-item');
@@ -499,7 +518,7 @@ async function loadNodes() {
     
     nodes.forEach(node => {
         const statusClass = node.isWorking ? 'status-online' : 'status-offline';
-        const lastActive = node.lastActive ? new Date(node.lastActive).toLocaleString() : 'Never';
+        const lastActive = node.lastActive ? formatDateByTimezone(node.lastActive) : 'Never';
         
         tbody.innerHTML += `
             <tr>
@@ -567,6 +586,71 @@ async function toggleAutoSync() {
     await fetch('/api/sync/toggle?enabled=' + enabled, { method: 'POST' });
 }
 
+// M3 Timezone chip selection handler
+function selectTimezone(chipEl) {
+    const tz = chipEl.getAttribute('data-tz');
+    const label = chipEl.getAttribute('data-label');
+    
+    // Update chip active state
+    document.querySelectorAll('#tzChipGroup .tz-chip').forEach(c => c.classList.remove('active'));
+    chipEl.classList.add('active');
+    
+    // Update the hidden select and trigger formatDates
+    const tzSelect = document.getElementById('timezoneSelect');
+    if (tzSelect) {
+        tzSelect.value = tz;
+    }
+    
+    // Update zone label badge
+    const zoneLabel = document.getElementById('tzZoneLabel');
+    if (zoneLabel) zoneLabel.textContent = label;
+    
+    // Immediately update live clock
+    updateTzLiveClock();
+    
+    formatDates();
+}
+
+// Live clock for timezone picker
+function updateTzLiveClock() {
+    const clockEl = document.getElementById('tzLiveClock');
+    if (!clockEl) return;
+    
+    const tz = localStorage.getItem('fileTimezone') || 'Asia/Kolkata';
+    try {
+        const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+        if (tz !== 'local') opts.timeZone = tz;
+        clockEl.textContent = new Intl.DateTimeFormat('en-US', opts).format(new Date());
+    } catch(e) {
+        clockEl.textContent = new Date().toLocaleTimeString();
+    }
+}
+
+function formatDates() {
+    const tzSelect = document.getElementById('timezoneSelect');
+    if (!tzSelect) return;
+    const tz = tzSelect.value;
+    localStorage.setItem('fileTimezone', tz);
+    
+    document.querySelectorAll('.file-item').forEach(item => {
+        const epoch = parseInt(item.getAttribute('data-date'));
+        if (isNaN(epoch)) return;
+        
+        const dateEl = item.querySelector('.file-date-display');
+        if (!dateEl) return;
+        
+        dateEl.innerText = formatDateByTimezone(epoch);
+    });
+
+    if (document.getElementById('networkModal') && document.getElementById('networkModal').classList.contains('show')) {
+        loadNodes();
+        loadConflicts();
+    }
+    
+    // Update live clock display
+    updateTzLiveClock();
+}
+
 // Load sync state on page load
 window.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -581,6 +665,28 @@ window.addEventListener('DOMContentLoaded', async () => {
         select.value = savedSort;
         sortFiles();
     }
+
+    let savedTz = localStorage.getItem('fileTimezone') || 'Asia/Kolkata';
+    let tzSelect = document.getElementById('timezoneSelect');
+    if (tzSelect) {
+        tzSelect.value = savedTz;
+        // Sync chip group active state from saved timezone
+        const chips = document.querySelectorAll('#tzChipGroup .tz-chip');
+        chips.forEach(c => {
+            c.classList.toggle('active', c.getAttribute('data-tz') === savedTz);
+        });
+        // Update zone label badge
+        const activeChip = document.querySelector('#tzChipGroup .tz-chip.active');
+        const zoneLabel = document.getElementById('tzZoneLabel');
+        if (activeChip && zoneLabel) {
+            zoneLabel.textContent = activeChip.getAttribute('data-label');
+        }
+        formatDates();
+    }
+    
+    // Start live clock (update every second)
+    updateTzLiveClock();
+    setInterval(updateTzLiveClock, 1000);
     
     // Assign file icon classes based on extension
     assignFileIconClasses();
@@ -601,11 +707,12 @@ async function loadConflicts() {
     }
 
     for (const [path, meta] of Object.entries(conflictsMap)) {
+        let displayDate = formatDateByTimezone(meta.lastModifiedEpoch || meta.lastModified);
         container.innerHTML += `
             <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
                 <div>
                     <span class="d-block fw-bold text-light">${meta.name} <small class="text-secondary">(${path})</small></span>
-                    <span class="text-muted">Remote Size: ${meta.size} | Remote Date: ${meta.lastModified}</span>
+                    <span class="text-muted">Remote Size: ${meta.size} | Remote Date: ${displayDate}</span>
                 </div>
                 <button class="btn btn-sm btn-outline-warning" onclick="showToast('To resolve, delete local file and sync again.')">Resolve</button>
             </div>
@@ -1041,7 +1148,7 @@ function renderChatMessages(chats) {
 
 function appendChatMessage(chat, scroll = true) {
     const container = document.getElementById('chatMessages');
-    const time = new Date(chat.timestamp).toLocaleString();
+    const time = formatDateByTimezone(chat.timestamp);
     const displayName = chat.senderName || chat.senderIp || 'Anonymous';
     
     // Default avatar if none provided
@@ -1136,7 +1243,7 @@ async function loadClipboards() {
     const container = document.getElementById('clipboardItems');
     container.innerHTML = '';
     items.forEach(item => {
-        const time = new Date(item.timestamp).toLocaleString();
+        const time = formatDateByTimezone(item.timestamp);
         const safeContent = escapeHtml(item.content);
         const encodedContent = encodeURIComponent(item.content);
         container.innerHTML += `
