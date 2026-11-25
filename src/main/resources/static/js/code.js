@@ -213,7 +213,7 @@ async function filterFiles() {
                         let iconColor = f.directory ? 'var(--file-color-folder)' : 'var(--md-sys-color-secondary)';
                         globalHtml += `<div class="d-flex justify-content-between align-items-center py-1">
                             <span class="small" style="color: var(--md-sys-color-on-surface-variant);"><span class="material-symbols-rounded me-2" style="font-size: 16px; color: ${iconColor};">${iconName}</span>${f.relativePath || f.name}</span>
-                            <a href="http://${result.node.ipAddress}:${result.node.port}/resource?filecode=${f.fileCode}" class="btn btn-sm py-0" style="color: var(--md-sys-color-primary);" title="Download"><span class="material-symbols-rounded" style="font-size: 18px;">download</span></a>
+                            <a href="http://${result.node.ipAddress}:${result.node.port}${f.url}" class="btn btn-sm py-0" style="color: var(--md-sys-color-primary);" title="Download"><span class="material-symbols-rounded" style="font-size: 18px;">download</span></a>
                         </div>`;
                         totalGlobalFound++;
                     });
@@ -936,13 +936,8 @@ async function fetchDownloadChunk() {
     currentDownloadController = new AbortController();
     
     try {
-        let fetchUrl = downloadState.url;
-        if (fetchUrl.includes('/download?')) {
-            fetchUrl = fetchUrl.replace('/download?', '/download/manual?');
-        }
-        
         const startTime = Date.now();
-        const response = await fetch(fetchUrl, {
+        const response = await fetch(downloadState.url, {
             headers: {
                 'Range': `bytes=${start}-${end}`
             },

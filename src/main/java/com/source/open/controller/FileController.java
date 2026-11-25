@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -17,12 +15,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourceRegion;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
@@ -42,7 +40,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import com.source.open.exception.ResourceNotFoundException;
 import com.source.open.payload.FileListJson;
 import com.source.open.payload.FileMeta;
 import com.source.open.payload.FileRequest;
@@ -83,34 +80,6 @@ public class FileController {
 		List<FileMeta> list = fs.refreshFileList();
 
 		return ResponseEntity.ok(new FileListJson(list, list.size()));
-	}
-
-	@GetMapping("/resource")
-	public ResponseEntity<Resource> get(HttpServletRequest request,
-			@RequestParam(required = false) Optional<String> filecode) throws FileNotFoundException {
-
-		if (filecode.isEmpty())
-			throw new FileNotFoundException("Please provide a valid filecode to download the file.");
-
-		FileMeta fileMeta = fs.getLocalFiles().get(filecode.get());
-
-		if (fileMeta == null)
-			throw new ResourceNotFoundException("The file you want to download is not available on server.");
-
-		Path p = fileMeta.getPath();
-
-		log.debug("Client {} is trying to download: {}", request.getRemoteAddr(), filecode.get());
-
-		if (p == null)
-			throw new FileNotFoundException("Please check directory and confirm the file exists.");
-
-		FileSystemResource resource = new FileSystemResource(p);
-
-		logTransfer("MANUAL_DOWNLOAD", fileMeta.getName(), request.getRemoteAddr(), fileMeta.getSizeInBytes());
-
-		return ResponseEntity.ok()
-				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
-				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).body(resource);
 	}
 
 	@PostMapping(value = "/zip-stream", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
@@ -296,281 +265,91 @@ public class FileController {
 		}
 	}
 
-	// NEW CODE STARTS HERE
-
-	// @GetMapping("/download")
-	// public ResponseEntity<?> download(HttpServletRequest request,
-	// @RequestParam(required = false) Optional<String> filecode) throws Exception {
-	//
-	// if (filecode.isEmpty())
-	// throw new FileNotFoundException("Please provide a valid filecode to download
-	// the file.");
-	//
-	// FileMeta fm = fs.getLocalFiles().get(filecode.get());
-	//
-	// if (fm == null)
-	// throw new ResourceNotFoundException("The file you want to download is not
-	// available on server.");
-	//
-	// Path p = fm.getPath();
-	//
-	// String size = String.valueOf(fm.getSizeInBytes());
-	//
-	// log.debug("Client " + request.getRemoteAddr() + " is trying to download: " +
-	// filecode.get());
-	//
-	// if (p == null)
-	// throw new FileNotFoundException("Please check directory and confirm the file
-	// exists.");
-	//
-	// MediaType mime =
-	// MediaTypeFactory.getMediaType(fm.getName()).orElse(MediaType.APPLICATION_OCTET_STREAM);
-	//
-	// String ifRangeHeader = request.getHeader("If-Range");
-	// String rangeHeader = request.getHeader("Range");
-	//
-	// String eTag = generateETag(fm);
-	//
-	// if (ifRangeHeader != null && !ifRangeHeader.equals(eTag)) {
-	// // If-Range doesn't match => send full file
-	// return ResponseEntity.ok().eTag(eTag).header(HttpHeaders.CONTENT_LENGTH,
-	// size)
-	// .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" +
-	// fm.getName() + "\"")
-	// .header(HttpHeaders.CONTENT_TYPE, mime.toString()).body(new
-	// UrlResource(p.toUri()));
-	// }
-	//
-	// if (rangeHeader == null) {
-	// // No Range => full file
-	// return ResponseEntity.ok().eTag(eTag).header(HttpHeaders.CONTENT_LENGTH,
-	// size)
-	// .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" +
-	// fm.getName() + "\"")
-	// .header(HttpHeaders.CONTENT_TYPE, mime.toString()).body(new
-	// UrlResource(p.toUri()));
-	// }
-	//
-	// List<HttpRange> ranges = HttpRange.parseRanges(rangeHeader);
-	// if (ranges.isEmpty()) {
-	// return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
-	// .header(HttpHeaders.CONTENT_RANGE, "bytes */" +
-	// fm.getSizeInBytes()).eTag(eTag).build();
-	// }
-	//
-	// if (ranges.size() == 1) {
-	// // Single range
-	// HttpRange r = ranges.get(0);
-	// long start = r.getRangeStart(fm.getSizeInBytes());
-	// long end = r.getRangeEnd(fm.getSizeInBytes());
-	// long len = end - start + 1;
-	//
-	// InputStream is = Files.newInputStream(p);
-	// is.skip(start);
-	// InputStream limited = new RangeInputStream(is, len);
-	//// InputStream limited = new ThrottledInputStream(is, len, 1024 * 100); // 100
-	/// KB/s throttle
-
-	//
-	// return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).eTag(eTag)
-	// .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(len))
-	// .header(HttpHeaders.CONTENT_RANGE, String.format("bytes %d-%d/%d", start,
-	// end, fm.getSizeInBytes()))
-	// .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" +
-	// fm.getName() + "\"")
-	// .header(HttpHeaders.CONTENT_TYPE, mime.toString()).body(new
-	// InputStreamResource(limited));
-	// }
-	//
-	// // Multi-range
-	// String boundary = UUID.randomUUID().toString();
-	//
-	// StreamingResponseBody responseBody = outputStream -> {
-	// for (HttpRange r : ranges) {
-	// long start = r.getRangeStart(fm.getSizeInBytes());
-	// long end = r.getRangeEnd(fm.getSizeInBytes());
-	// long len = end - start + 1;
-	//
-	// outputStream.write(("--" + boundary + "\r\n").getBytes());
-	// outputStream.write(("Content-Type: " + mime + "\r\n").getBytes());
-	// outputStream.write(
-	// ("Content-Range: bytes " + start + "-" + end + "/" + fm.getSizeInBytes() +
-	// "\r\n").getBytes());
-	// outputStream.write(("\r\n").getBytes());
-	//
-	// try (InputStream is = Files.newInputStream(p)) {
-	// is.skip(start);
-	// InputStream limited = new RangeInputStream(is, len);
-	// copy(limited, outputStream);
-	//// InputStream throttled = new ThrottledInputStream(is, len, 1024 * 100L); /
-	/// copy(throttled, outputStream); copyRange(is, outputStream, len);
-	// }
-	// outputStream.write(("\r\n").getBytes());
-	// }
-	// outputStream.write(("--" + boundary + "--\r\n").getBytes());
-	// };
-	//
-	// return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).eTag(eTag)
-	// .header(HttpHeaders.CONTENT_TYPE, "multipart/byteranges; boundary=" +
-	// boundary).body(responseBody);
-	// }
-
+	/**
+	 * Plain download: matches when there's no Range header. Zero-copy full-file
+	 * transfer via Resource, with ETag/Last-Modified 304 caching handled by Spring.
+	 */
 	@GetMapping("/download")
 	public ResponseEntity<Resource> download(@RequestParam(required = false) String filecode,
-			ServletWebRequest request) { // Native helper for ETag/Last-Modified
+			ServletWebRequest request) {
 
-		// 1. Validation using Modern Java checks
-		if (filecode == null || filecode.isBlank()) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Filecode is required.");
-		}
+		FileMeta fm = lookupFile(filecode);
+		Path path = fm.getPath();
 
-		var fm = fs.getLocalFiles().get(filecode);
-		if (fm == null) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File metadata not found.");
-		}
-
-		var path = fm.getPath();
-		if (!Files.exists(path)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Physical file missing.");
-		}
-
-		// 2. Efficient caching (ETag & Last-Modified)
-		// ServletWebRequest handles the "If-None-Match" / 304 Not Modified logic
-		// automatically
 		String eTag = generateETag(fm);
 		long lastModified = fm.getLastModifiedEpoch();
 
 		if (request.checkNotModified(eTag, lastModified)) {
-			return null; // Spring automatically sends 304 response
+			return null;
 		}
 
-		// 3. Return Resource for OS-level Zero-Copy (sendfile)
-		Resource resource = new FileSystemResource(path);
+		MediaType mime = MediaTypeFactory.getMediaType(fm.getName()).orElse(MediaType.APPLICATION_OCTET_STREAM);
+		ContentDisposition contentDisposition = ContentDisposition.attachment().filename(fm.getName()).build();
 
-		// Modern Content-Disposition Builder
-		var contentDisposition = ContentDisposition.attachment().filename(fm.getName()).build();
+		logTransfer("MANUAL_DOWNLOAD", fm.getName(), request.getRequest().getRemoteAddr(), fm.getSizeInBytes());
 
-		logTransfer("MANUAL_DOWNLOAD", fm.getName(), ((ServletWebRequest) request).getRequest().getRemoteAddr(), fm.getSizeInBytes());
-
-		return ResponseEntity.ok()
-				.contentType(MediaTypeFactory.getMediaType(resource).orElse(MediaType.APPLICATION_OCTET_STREAM))
-				.header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString()).lastModified(lastModified)
-				.eTag(eTag).body(resource);
-	}
-
-	@GetMapping("/download/manual")
-	public ResponseEntity<StreamingResponseBody> downloadCustom(@RequestParam(required = false) String filecode,
-			@RequestHeader(value = HttpHeaders.RANGE, required = false) String rangeHeader,
-			@RequestHeader(value = HttpHeaders.IF_RANGE, required = false) String ifRangeHeader,
-			HttpServletRequest request) {
-
-		if (filecode == null || filecode.isBlank())
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Filecode required");
-
-		var fm = fs.getLocalFiles().get(filecode);
-		if (fm == null)
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-
-		var path = fm.getPath();
-		long fileSize = fm.getSizeInBytes();
-		String eTag = generateETag(fm);
-		var mime = MediaTypeFactory.getMediaType(fm.getName()).orElse(MediaType.APPLICATION_OCTET_STREAM);
-
-		// ETag Validation (If-Range logic)
-		boolean validRange = rangeHeader != null && (ifRangeHeader == null || ifRangeHeader.equals(eTag));
-		List<HttpRange> ranges = validRange ? HttpRange.parseRanges(rangeHeader) : List.of();
-
-		// SCENARIO 1: Full File (No Range or Invalid Range)
-		if (ranges.isEmpty()) {
-			logTransfer("MANUAL_DOWNLOAD", fm.getName(), request.getRemoteAddr(), fileSize);
-			return ResponseEntity.ok().eTag(eTag).contentLength(fileSize).contentType(mime)
-					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fm.getName() + "\"")
-					.body(os -> {
-						// Java 25 / OS Optimization: Use transferTo for cleaner copying
-						try (var fileChannel = FileChannel.open(path, StandardOpenOption.READ);
-								var outChannel = Channels.newChannel(os)) {
-							fileChannel.transferTo(0, fileSize, outChannel);
-						}
-					});
-		}
-
-		// SCENARIO 2: Single Range
-		if (ranges.size() == 1) {
-			HttpRange r = ranges.get(0);
-			long start = r.getRangeStart(fileSize);
-			long end = r.getRangeEnd(fileSize);
-			long length = end - start + 1;
-
-			logTransfer("MANUAL_DOWNLOAD", fm.getName(), request.getRemoteAddr(), length);
-
-			return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).eTag(eTag).contentType(mime)
-					.header(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileSize)
-					.header(HttpHeaders.CONTENT_LENGTH, String.valueOf(length))
-					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fm.getName() + "\"")
-					.body(os -> streamRange(path, start, length, os));
-		}
-
-		// SCENARIO 3: Multi-Range (Multipart)
-		String boundary = UUID.randomUUID().toString();
-
-		return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).eTag(eTag)
-				.contentType(MediaType.parseMediaType("multipart/byteranges; boundary=" + boundary)).body(os -> {
-					long totalBytesRequested = 0;
-					for (HttpRange r : ranges) {
-						long start = r.getRangeStart(fileSize);
-						long end = r.getRangeEnd(fileSize);
-						long length = end - start + 1;
-						totalBytesRequested += length;
-
-						// Write Boundary Headers
-						String partHeader = String.format(
-								"--%s\r\nContent-Type: %s\r\nContent-Range: bytes %d-%d/%d\r\n\r\n", boundary, mime,
-								start, end, fileSize);
-						os.write(partHeader.getBytes());
-
-						// Stream the chunk
-						streamRange(path, start, length, os);
-
-						os.write("\r\n".getBytes());
-					}
-					os.write(("--" + boundary + "--\r\n").getBytes());
-					logTransfer("MANUAL_DOWNLOAD", fm.getName(), request.getRemoteAddr(), totalBytesRequested);
-				});
+		return ResponseEntity.ok().eTag(eTag).lastModified(lastModified).contentType(mime)
+				.header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+				.header(HttpHeaders.ACCEPT_RANGES, "bytes")
+				.body(new FileSystemResource(path));
 	}
 
 	/**
-	 * Helper to stream efficient file chunks
+	 * Range download: matches whenever a Range header is sent. Backed by Spring's
+	 * built-in ResourceRegion support (HttpRange.toResourceRegions), which handles
+	 * single-range, multi-range (multipart/byteranges), and If-Range validation
+	 * through the ResourceRegionHttpMessageConverter instead of hand-rolled
+	 * FileChannel streaming.
 	 */
-	private void streamRange(java.nio.file.Path path, long start, long length, OutputStream os) throws IOException {
-		// Java 21+ try-with-resources
-		try (var fileChannel = FileChannel.open(path, StandardOpenOption.READ)) {
-			// Fast seek using Channel (OS level seek) rather than InputStream.skip (Loop
-			// scan)
-			fileChannel.position(start);
+	@GetMapping(value = "/download", headers = HttpHeaders.RANGE)
+	public ResponseEntity<List<ResourceRegion>> downloadRange(@RequestParam(required = false) String filecode,
+			@RequestHeader(HttpHeaders.RANGE) String rangeHeader,
+			@RequestHeader(value = HttpHeaders.IF_RANGE, required = false) String ifRangeHeader,
+			HttpServletRequest request) {
 
-			// Use a larger buffer for Ubuntu/Server environments (e.g., 32KB or 64KB)
-			var buffer = java.nio.ByteBuffer.allocate(64 * 1024);
-			long remaining = length;
+		FileMeta fm = lookupFile(filecode);
+		Path path = fm.getPath();
+		long fileSize = fm.getSizeInBytes();
 
-			var outChannel = Channels.newChannel(os);
+		String eTag = generateETag(fm);
+		MediaType mime = MediaTypeFactory.getMediaType(fm.getName()).orElse(MediaType.APPLICATION_OCTET_STREAM);
+		ContentDisposition contentDisposition = ContentDisposition.attachment().filename(fm.getName()).build();
+		Resource resource = new FileSystemResource(path);
 
-			while (remaining > 0) {
-				// Cap the read at the remaining length
-				if (remaining < buffer.capacity()) {
-					buffer.limit((int) remaining);
-				}
+		boolean honorRange = ifRangeHeader == null || ifRangeHeader.equals(eTag);
 
-				int read = fileChannel.read(buffer);
-				if (read == -1)
-					break;
-
-				buffer.flip(); // Switch to read mode
-				outChannel.write(buffer);
-				buffer.clear(); // Switch back to write mode
-
-				remaining -= read;
-			}
+		List<ResourceRegion> regions;
+		HttpStatus status;
+		if (honorRange) {
+			List<HttpRange> ranges = HttpRange.parseRanges(rangeHeader);
+			regions = HttpRange.toResourceRegions(ranges, resource);
+			status = HttpStatus.PARTIAL_CONTENT;
+		} else {
+			// If-Range didn't match the current ETag: send the whole file instead.
+			regions = List.of(new ResourceRegion(resource, 0, fileSize));
+			status = HttpStatus.OK;
 		}
+
+		long bytesServed = regions.stream().mapToLong(ResourceRegion::getCount).sum();
+		logTransfer("MANUAL_DOWNLOAD", fm.getName(), request.getRemoteAddr(), bytesServed);
+
+		return ResponseEntity.status(status).eTag(eTag).contentType(mime)
+				.header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+				.body(regions);
+	}
+
+	private FileMeta lookupFile(String filecode) {
+		if (filecode == null || filecode.isBlank())
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Filecode is required.");
+
+		FileMeta fm = fs.getLocalFiles().get(filecode);
+		if (fm == null)
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File metadata not found.");
+
+		if (fm.getPath() == null || !Files.exists(fm.getPath()))
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Physical file missing.");
+
+		return fm;
 	}
 
 	private String generateETag(FileMeta fm) {
@@ -578,19 +357,10 @@ public class FileController {
 		return "\"" + Integer.toHexString(value.hashCode()) + "\"";
 	}
 
-	// private void copy(InputStream in, OutputStream out) throws IOException {
-	// byte[] buffer = new byte[8192];
-	// int read;
-	// while ((read = in.read(buffer)) != -1) {
-	// out.write(buffer, 0, read);
-	// out.flush();
-	// }
-	// }
-
 	private void logTransfer(String type, String filename, String ipAddress, long size) {
 		try {
 			Optional<com.source.open.payload.TransferHistory> recentOpt = transferHistoryRepo.findFirstByIpAddressAndFilenameAndTypeOrderByTimestampDesc(ipAddress, filename, type);
-			
+
 			if (recentOpt.isPresent()) {
 				com.source.open.payload.TransferHistory recent = recentOpt.get();
 				// If the transfer happened within the last 1 hour, accumulate size
