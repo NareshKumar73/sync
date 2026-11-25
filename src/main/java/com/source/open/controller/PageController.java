@@ -40,8 +40,6 @@ public class PageController {
 
 		Map<String, String> ipMap = nu.getSystemIpMap();
 
-		System.out.println(ipMap);
-
 		model.addAttribute("local", json);
 		model.addAttribute("form", new FileRequest());
 		model.addAttribute("ips", ipMap);

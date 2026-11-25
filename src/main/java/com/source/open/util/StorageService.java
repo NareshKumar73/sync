@@ -21,12 +21,24 @@ public class StorageService {
     @Value("${app.storage.limit:26843545600}") // Default 25GB
     private long maxLimit;
 
+    // Walking the whole shared folder is expensive and this is polled every few
+    // seconds by the dashboard, so cache the result briefly instead of tracking
+    // per-file deltas (which would need to stay in sync with uploads, sync
+    // downloads, deletes, and files added directly on disk).
+    private static final long USED_SPACE_CACHE_MS = 2000;
+    private volatile long cachedUsedSpace;
+    private volatile long cachedUsedSpaceAt;
+
     public StorageService(FileService fileService) {
         this.fileService = fileService;
         this.activeUploads = new ConcurrentHashMap<>();
     }
 
     public long getCurrentUsedSpace() {
+        long now = System.currentTimeMillis();
+        if (now - cachedUsedSpaceAt < USED_SPACE_CACHE_MS) {
+            return cachedUsedSpace;
+        }
         long size = 0;
         try (Stream<Path> stream = Files.walk(fileService.getAppDir())) {
             size = stream
@@ -36,6 +48,8 @@ public class StorageService {
         } catch (IOException e) {
             log.error("Failed to calculate folder size", e);
         }
+        cachedUsedSpace = size;
+        cachedUsedSpaceAt = now;
         return size;
     }
 

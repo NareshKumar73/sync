@@ -138,7 +138,7 @@ public class SyncService {
         }
     }
 
-    private void processRemoteFiles(String baseUrl, List<FileMeta> remoteFiles, Map<String, FileMeta> localFilesMap) {
+    void processRemoteFiles(String baseUrl, List<FileMeta> remoteFiles, Map<String, FileMeta> localFilesMap) {
         for (FileMeta remote : remoteFiles) {
             String relativePath = remote.getRelativePath();
 

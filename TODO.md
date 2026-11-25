@@ -13,14 +13,14 @@ Ordered most severe first. File:line refs point at the current code.
 - [x] **Filecode hashing isn't thread-safe** — `FileService.java`. Fixed: `getHash(...)` now creates a fresh `MessageDigest` per call instead of reusing a shared field.
 
 ### Should fix
-- [ ] **No tests for any of the risky logic** — only test in the repo is the context-load smoke test. At minimum add a test for the `appDir.startsWith(...)` traversal guard (so the three bugs above can't silently regress) and one for the sync diff logic.
+- [x] **No tests for any of the risky logic** — only test in the repo was the context-load smoke test. Fixed: added `FileServiceTest` (traversal guard on `listDirectory`) and `SyncServiceTest` (sync diff logic: matching file is not a conflict, size mismatch is a conflict, 2s mtime tolerance, and the directory-create traversal guard in `processRemoteFiles`, both the reject and the legitimate-subdirectory case). `processRemoteFiles` was changed from `private` to package-private so the test can call it directly instead of via reflection.
 - [x] **Three overlapping download implementations** — `/resource` (`FileController.java:88`), `/download` (`:404`), `/download/manual` (`:447`) duplicate ETag/Range handling and already disagree on headers. Fixed: collapsed into one `/download` endpoint using Spring's `ResourceRegion`/`HttpRange.toResourceRegions` (see improvement plan item 1). Bonus: this also fixes a latent bug where peer-to-peer sync resumable downloads sent a `Range` header that the old `/download` silently ignored (always returned 200, so resume never actually resumed).
-- [ ] **~500 lines of dead, commented-out code** — `NetworkUtil.java:117-314`, `FileService.java:100-190`. Delete. (The `FileController.java` dead block and the dead `RangeInputStream`/`ThrottledInputStream` classes it referenced are already gone as part of the download-endpoint consolidation above.)
-- [ ] **`StorageService.getCurrentUsedSpace()` walks the whole shared folder on every call** — `StorageService.java:29-40`. Called by every `/api/storage/status` poll and every upload start; gets slower as the shared folder grows. Consider tracking a running total instead of a full `Files.walk` each time.
-- [ ] **`/upload` silently swallows failures** — `FileController.java:196-208`. Catches `IOException`/`InvalidPathException` per file, logs, and still returns success to the client.
+- [x] **~500 lines of dead, commented-out code** — `NetworkUtil.java:117-314`, `FileService.java:100-190`. Fixed: deleted. (The `FileController.java` dead block and the dead `RangeInputStream`/`ThrottledInputStream` classes it referenced were already gone as part of the download-endpoint consolidation above.)
+- [x] **`StorageService.getCurrentUsedSpace()` walks the whole shared folder on every call** — `StorageService.java:29-40`. Called by every `/api/storage/status` poll (every 2s per connected client, per `code.js`) and every chunked-upload start. Fixed: cached for 2 seconds instead of tracking a running total — a running total would need to stay correct across uploads, sync downloads, deletes, and files added directly on disk, which is more surface area for drift than a short cache; the cache still self-heals by re-walking after it expires.
+- [x] **`/upload` silently swallows failures** — `FileController.java:196-208`. Caught `IOException`/`InvalidPathException` per file, logged, and still returned success (`void`) to the client. Fixed: now returns `ResponseEntity<Map>` with `uploaded`/`failed` filename lists, and HTTP 207 (Multi-Status) if any file failed.
 
 ### Nice to have
-- [ ] Remove leftover debug print — `PageController.java:43` (`System.out.println(ipMap)`), runs on every page load.
+- [x] Remove leftover debug print — `PageController.java:43` (`System.out.println(ipMap)`), ran on every page load. Fixed: deleted.
 
 ---
 

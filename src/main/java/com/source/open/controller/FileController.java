@@ -6,11 +6,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -164,29 +164,36 @@ public class FileController {
 
 	// file upload endpoint - support both multiple and single file upload
 	@PostMapping("/upload")
-	public void uploadMultipleFiles(@RequestPart("file") List<MultipartFile> parts, HttpServletRequest request) {
+	public ResponseEntity<Map<String, Object>> uploadMultipleFiles(@RequestPart("file") List<MultipartFile> parts,
+			HttpServletRequest request) {
 		log.debug("File upload request arrived");
 
+		List<String> uploaded = new ArrayList<>();
+		List<String> failed = new ArrayList<>();
+
 		for (MultipartFile file : parts) {
+			String originalFilename = file.getOriginalFilename();
+			if (originalFilename == null || originalFilename.contains("..") || originalFilename.contains("/")
+					|| originalFilename.contains("\\")) {
+				log.warn("Rejected upload with unsafe filename: {}", originalFilename);
+				failed.add(originalFilename);
+				continue;
+			}
 			try {
-				String originalFilename = file.getOriginalFilename();
-				if (originalFilename == null || originalFilename.contains("..") || originalFilename.contains("/")
-						|| originalFilename.contains("\\")) {
-					log.warn("Rejected upload with unsafe filename: {}", originalFilename);
-					continue;
-				}
 				Path newFile = fs.getAppDir().resolve(originalFilename);
 				try (InputStream in = file.getInputStream()) {
 					Files.copy(in, newFile, StandardCopyOption.REPLACE_EXISTING);
-					logTransfer("MANUAL_UPLOAD", originalFilename, request.getRemoteAddr(), file.getSize());
-				} catch (Exception e) {
-					e.printStackTrace();
 				}
-			} catch (InvalidPathException e) {
-				e.printStackTrace();
+				logTransfer("MANUAL_UPLOAD", originalFilename, request.getRemoteAddr(), file.getSize());
+				uploaded.add(originalFilename);
+			} catch (Exception e) {
+				log.error("Failed to upload file: {}", originalFilename, e);
+				failed.add(originalFilename);
 			}
 		}
 
+		Map<String, Object> body = Map.of("uploaded", uploaded, "failed", failed);
+		return failed.isEmpty() ? ResponseEntity.ok(body) : ResponseEntity.status(HttpStatus.MULTI_STATUS).body(body);
 	}
 
 	@PostMapping("/upload/chunk")
