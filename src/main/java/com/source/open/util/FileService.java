@@ -42,8 +42,6 @@ public class FileService {
 
 	private final Encoder base64Encoder;
 
-	private MessageDigest digest;
-
 	// FILE CODE - FILE META
 	private final LinkedHashMap<String, FileMeta> localFiles;
 
@@ -339,11 +337,7 @@ public class FileService {
 
 	public byte[] getHash(File f) {
 		try {
-			if (this.digest == null)
-				this.digest = MessageDigest.getInstance("SHA3-256");
-
-			return digest.digest(f.getName().getBytes(StandardCharsets.UTF_8));
-
+			return MessageDigest.getInstance("SHA3-256").digest(f.getName().getBytes(StandardCharsets.UTF_8));
 		} catch (Exception e) {
 			log.error(e);
 		}
@@ -362,11 +356,7 @@ public class FileService {
 
 	public byte[] getHash(String name) {
 		try {
-			if (this.digest == null)
-				this.digest = MessageDigest.getInstance("SHA3-256");
-
-			return digest.digest(name.getBytes(StandardCharsets.UTF_8));
-
+			return MessageDigest.getInstance("SHA3-256").digest(name.getBytes(StandardCharsets.UTF_8));
 		} catch (Exception e) {
 			log.error(e);
 		}

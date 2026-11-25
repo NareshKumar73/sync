@@ -167,6 +167,11 @@ public class FileController {
 
 		Path folder = fs.getAppDir().resolve(path).normalize();
 
+		if (!folder.startsWith(fs.getAppDir())) {
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid path");
+			return;
+		}
+
 		response.setContentType("application/zip");
 		response.setHeader("Content-Disposition", "attachment; filename=\"" + folder.getFileName() + ".zip\"");
 
@@ -195,10 +200,16 @@ public class FileController {
 
 		for (MultipartFile file : parts) {
 			try {
-				Path newFile = fs.getAppDir().resolve(file.getOriginalFilename());
+				String originalFilename = file.getOriginalFilename();
+				if (originalFilename == null || originalFilename.contains("..") || originalFilename.contains("/")
+						|| originalFilename.contains("\\")) {
+					log.warn("Rejected upload with unsafe filename: {}", originalFilename);
+					continue;
+				}
+				Path newFile = fs.getAppDir().resolve(originalFilename);
 				try (InputStream in = file.getInputStream()) {
 					Files.copy(in, newFile, StandardCopyOption.REPLACE_EXISTING);
-					logTransfer("MANUAL_UPLOAD", file.getOriginalFilename(), request.getRemoteAddr(), file.getSize());
+					logTransfer("MANUAL_UPLOAD", originalFilename, request.getRemoteAddr(), file.getSize());
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -224,6 +235,9 @@ public class FileController {
 			Path targetDir = fs.getAppDir().resolve(relativePath).normalize();
 			if (!targetDir.startsWith(fs.getAppDir())) {
 				return ResponseEntity.badRequest().body("Invalid path");
+			}
+			if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+				return ResponseEntity.badRequest().body("Invalid filename");
 			}
 			Files.createDirectories(targetDir);
 

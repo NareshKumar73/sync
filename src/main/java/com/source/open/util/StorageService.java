@@ -43,7 +43,7 @@ public class StorageService {
         return activeUploads.values().stream().mapToLong(Long::longValue).sum();
     }
 
-    public boolean reserveSpace(String uuid, long expectedTotalSize) {
+    public synchronized boolean reserveSpace(String uuid, long expectedTotalSize) {
         long currentUsed = getCurrentUsedSpace();
         long currentReserved = getReservedSpace();
         

@@ -143,7 +143,11 @@ public class SyncService {
             String relativePath = remote.getRelativePath();
 
             if (remote.isDirectory()) {
-                Path dirPath = fs.getAppDir().resolve(relativePath);
+                Path dirPath = fs.getAppDir().resolve(relativePath).normalize();
+                if (!dirPath.startsWith(fs.getAppDir())) {
+                    log.warn("Rejected remote directory outside shared folder: {}", relativePath);
+                    continue;
+                }
                 if (!Files.exists(dirPath)) {
                     try {
                         Files.createDirectories(dirPath);
@@ -173,7 +177,11 @@ public class SyncService {
 
     private void downloadFile(String baseUrl, FileMeta remote) {
         String downloadUrl = baseUrl + remote.getUrl();
-        Path dest = fs.getAppDir().resolve(remote.getRelativePath());
+        Path dest = fs.getAppDir().resolve(remote.getRelativePath()).normalize();
+        if (!dest.startsWith(fs.getAppDir())) {
+            log.warn("Rejected sync download with path outside shared folder: {}", remote.getRelativePath());
+            return;
+        }
         Path tempDir = fs.getData().resolve("temp");
         Path tempFile = tempDir.resolve(remote.getRelativePath() + ".part");
 
