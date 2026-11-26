@@ -8,27 +8,38 @@ a backend item above it exists. Nothing in this file is implemented yet.
 
 ## Ready now — Backend
 
-1. **Delete and rename/move files or folders.** Still the biggest functional
-   gap — no `@DeleteMapping` or rename endpoint exists anywhere in
-   `FileController`. Add `DELETE /files` (by filecode, same access pattern as
-   `/download`) and a rename/move endpoint reusing the existing
-   `resolved.normalize().startsWith(appDir)` guard.
-2. **Create-folder endpoint.** One `FileService` method + one controller
-   method, same guard pattern.
-3. **Broadcast a "file list changed" event on the existing STOMP broker**
-   after upload, chunked-upload completion, sync download, and (once #1
-   exists) delete. `WebSocketConfig`'s `/topic` broker is already running for
-   chat; this just reuses it.
-4. **Trash instead of hard delete**, once #1 exists — move to `data/.trash`
-   instead of `Files.delete`, so an accidental delete (including one from a
-   sync pull) is recoverable.
-5. **Optional shared secret between sync nodes.** `/api/nodes` accepts any
-   IP:port as a peer with zero authentication. Reasonable default for a LAN
-   tool, but worth an opt-in per-node token. **Flagging as a trade-off
-   decision for you, not auto-applying** — changes the trust model.
-6. **Remove dead config** — `upd.port=11111` in `application.properties` is
-   never read anywhere; leftover from an abandoned UDP-discovery feature that
-   only ever existed as commented-out code (already deleted).
+1. ~~**Delete and rename/move files or folders.**~~ **Fixed:** `FileController`
+   now has `DELETE /files` + `PUT /files/rename` (by filecode) and
+   `DELETE /folder` + `PUT /folder/rename` (by relative path, matching
+   `/zip-folder`'s existing convention for folder-level operations) — all
+   reusing the `resolved.normalize().startsWith(appDir)` guard. Delete moves
+   to trash rather than hard-deleting (see #4).
+2. ~~**Create-folder endpoint.**~~ **Fixed:** `POST /folder?relativePath=...`.
+3. ~~**Broadcast a "file list changed" event on the existing STOMP broker**~~ —
+   **Fixed:** `FileController` and `SyncService` both inject
+   `SimpMessagingTemplate` and send a plain `"changed"` payload to
+   `/topic/files` after upload, chunked-upload completion, the new
+   delete/rename/create-folder endpoints, and once per `triggerSync()` run
+   (not per file, to avoid flooding the topic during a big sync).
+4. ~~**Trash instead of hard delete**~~ — **Fixed:** `FileService.moveToTrash()`
+   moves the file/folder into `data/.trash` (preserving its relative path,
+   `Files.move` handles a whole directory tree in one call) instead of
+   deleting; used by both the file and folder delete endpoints.
+5. **Optional shared secret between sync nodes.** Still open — you had no
+   preference when asked, so going with the smaller default (skip): nodes
+   still trust each other by IP:port only. `/api/nodes` accepts any peer
+   with zero authentication; revisit if this ever needs to run on something
+   less trusted than a LAN.
+6. ~~**Remove dead config**~~ — **Fixed:** removed `upd.port=11111` from
+   `application.properties`.
+
+Verified live against a running instance: created/renamed/deleted both a
+file and a folder, confirmed deletes land in `data/.trash` with the right
+relative path, confirmed both path-traversal guards (`../evil` on create,
+`../../evil.txt` on rename) and the can't-delete-the-shared-root guard all
+return 400, and connected a real STOMP/SockJS client to `/topic/files` to
+confirm the broadcast fires with payload `"changed"` after a create-folder
+call.
 
 ## Ready now — Frontend: bugs & security (do first)
 
@@ -131,13 +142,15 @@ console errors from the new `th:aria-label` Thymeleaf attribute.
     chip UI over a hidden `<select>` on `index.html:50-83`, a plain visible
     `<select>` on `history.html:41-47`. Pick one.
 
-## Frontend work blocked on a backend item above
+## Frontend work, now unblocked (backend #1-3 are done)
 
-30. **Delete/rename UI** (buttons, confirm dialog) — blocked on backend #1.
-31. **Create-folder UI** (input + button next to upload) — blocked on
-    backend #2.
-32. **Live file-list auto-refresh** (listen for the broadcast, re-render
-    without a manual click) — blocked on backend #3.
+30. **Delete/rename UI** (buttons, confirm dialog) — backend ready:
+    `DELETE`/`PUT .../rename` on `/files` and `/folder`.
+31. **Create-folder UI** (input + button next to upload) — backend ready:
+    `POST /folder`.
+32. **Live file-list auto-refresh** (subscribe to `/topic/files` the same
+    way chat already subscribes to `/topic/public`, re-render on message
+    instead of requiring a manual refresh) — backend ready.
 
 ## No action needed, flagged only for awareness
 

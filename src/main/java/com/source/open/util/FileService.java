@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.text.CharacterIterator;
@@ -72,6 +73,36 @@ public class FileService {
 		if (!Files.exists(p))
 			p = Files.createFile(p);
 		return p;
+	}
+
+	public Path getTrashDir() throws IOException {
+		return createFolder(data.resolve(".trash"));
+	}
+
+	/**
+	 * Moves a file or folder (works for either - Files.move handles a whole
+	 * directory tree in one call) under appDir into the trash instead of
+	 * deleting it, so an accidental delete is recoverable.
+	 */
+	public void moveToTrash(Path source) throws IOException {
+		Path dest = getTrashDir().resolve(appDir.relativize(source));
+		Files.createDirectories(dest.getParent());
+		if (Files.exists(dest))
+			dest = dest.resolveSibling(dest.getFileName() + "." + System.currentTimeMillis());
+		Files.move(source, dest, StandardCopyOption.REPLACE_EXISTING);
+	}
+
+	/**
+	 * Renames or moves a file or folder under appDir to newRelativePath, also
+	 * under appDir.
+	 */
+	public Path move(Path source, String newRelativePath) throws IOException {
+		Path dest = appDir.resolve(newRelativePath).normalize();
+		if (!dest.startsWith(appDir))
+			throw new IllegalArgumentException("Invalid destination path");
+		Files.createDirectories(dest.getParent());
+		Files.move(source, dest, StandardCopyOption.REPLACE_EXISTING);
+		return dest;
 	}
 
 	public String friendlyFileSize(long bytes) {

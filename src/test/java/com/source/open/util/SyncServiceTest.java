@@ -10,6 +10,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import com.source.open.payload.FileMeta;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -22,7 +24,8 @@ class SyncServiceTest {
 	private SyncService newSyncService() {
 		FileService fs = mock(FileService.class);
 		when(fs.getAppDir()).thenReturn(appDir);
-		return new SyncService(fs, mock(InstanceNodeRepository.class), mock(TransferHistoryRepository.class));
+		return new SyncService(fs, mock(InstanceNodeRepository.class), mock(TransferHistoryRepository.class),
+				mock(SimpMessagingTemplate.class));
 	}
 
 	private FileMeta file(String relativePath, long sizeInBytes, long lastModifiedEpoch) {

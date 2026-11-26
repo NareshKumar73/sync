@@ -28,9 +28,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -59,6 +62,7 @@ public class FileController {
 	private final FileService fs;
 	private final com.source.open.util.StorageService storageService;
 	private final com.source.open.util.TransferHistoryRepository transferHistoryRepo;
+	private final SimpMessagingTemplate messagingTemplate;
 
 	@GetMapping("/files")
 	public ResponseEntity<FileListJson> fileList() {
@@ -159,6 +163,59 @@ public class FileController {
 		}
 	}
 
+	@PostMapping("/folder")
+	public ResponseEntity<?> createFolder(@RequestParam String relativePath) {
+		Path dir = fs.getAppDir().resolve(relativePath).normalize();
+		if (!dir.startsWith(fs.getAppDir())) {
+			return ResponseEntity.badRequest().body("Invalid path");
+		}
+		try {
+			Files.createDirectories(dir);
+		} catch (IOException e) {
+			log.error("Failed to create folder {}", relativePath, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create folder");
+		}
+		fs.refreshFileList();
+		broadcastFilesChanged();
+		return ResponseEntity.ok().build();
+	}
+
+	@DeleteMapping("/folder")
+	public ResponseEntity<?> deleteFolder(@RequestParam String path) {
+		Path dir = fs.getAppDir().resolve(path).normalize();
+		if (!dir.startsWith(fs.getAppDir()) || dir.equals(fs.getAppDir())) {
+			return ResponseEntity.badRequest().body("Invalid path");
+		}
+		try {
+			fs.moveToTrash(dir);
+		} catch (IOException e) {
+			log.error("Failed to delete folder {}", path, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete folder");
+		}
+		fs.refreshFileList();
+		broadcastFilesChanged();
+		return ResponseEntity.ok().build();
+	}
+
+	@PutMapping("/folder/rename")
+	public ResponseEntity<?> renameFolder(@RequestParam String path, @RequestParam String newRelativePath) {
+		Path dir = fs.getAppDir().resolve(path).normalize();
+		if (!dir.startsWith(fs.getAppDir()) || dir.equals(fs.getAppDir())) {
+			return ResponseEntity.badRequest().body("Invalid path");
+		}
+		try {
+			fs.move(dir, newRelativePath);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (IOException e) {
+			log.error("Failed to rename folder {}", path, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to rename folder");
+		}
+		fs.refreshFileList();
+		broadcastFilesChanged();
+		return ResponseEntity.ok().build();
+	}
+
 	// TODO Add Zip Stream of Folder using filecode and generate filecode using
 	// relative path from appDir
 
@@ -190,6 +247,10 @@ public class FileController {
 				log.error("Failed to upload file: {}", originalFilename, e);
 				failed.add(originalFilename);
 			}
+		}
+
+		if (!uploaded.isEmpty()) {
+			broadcastFilesChanged();
 		}
 
 		Map<String, Object> body = Map.of("uploaded", uploaded, "failed", failed);
@@ -260,6 +321,7 @@ public class FileController {
 					long size = Files.size(targetDir.resolve(filename));
 					logTransfer("MANUAL_UPLOAD", filename, request.getRemoteAddr(), size);
 				} catch (Exception e) {}
+				broadcastFilesChanged();
 				return ResponseEntity.ok().body(Map.of("message", "Upload complete", "completed", true));
 			}
 
@@ -270,6 +332,48 @@ public class FileController {
 			log.error("Error uploading chunk", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error uploading chunk");
 		}
+	}
+
+	@DeleteMapping("/files")
+	public ResponseEntity<?> deleteFile(@RequestParam String filecode) {
+		FileMeta fm = lookupFile(filecode);
+		Path path = fm.getPath();
+		if (!path.normalize().startsWith(fs.getAppDir())) {
+			return ResponseEntity.badRequest().body("Invalid path");
+		}
+		try {
+			fs.moveToTrash(path);
+		} catch (IOException e) {
+			log.error("Failed to delete {}", fm.getName(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete");
+		}
+		fs.getLocalFiles().remove(filecode);
+		broadcastFilesChanged();
+		return ResponseEntity.ok().build();
+	}
+
+	@PutMapping("/files/rename")
+	public ResponseEntity<?> renameFile(@RequestParam String filecode, @RequestParam String newRelativePath) {
+		FileMeta fm = lookupFile(filecode);
+		Path path = fm.getPath();
+		if (!path.normalize().startsWith(fs.getAppDir())) {
+			return ResponseEntity.badRequest().body("Invalid path");
+		}
+		try {
+			fs.move(path, newRelativePath);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		} catch (IOException e) {
+			log.error("Failed to rename {}", fm.getName(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to rename");
+		}
+		fs.getLocalFiles().remove(filecode);
+		broadcastFilesChanged();
+		return ResponseEntity.ok().build();
+	}
+
+	private void broadcastFilesChanged() {
+		messagingTemplate.convertAndSend("/topic/files", "changed");
 	}
 
 	/**

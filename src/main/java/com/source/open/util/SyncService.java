@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -35,6 +36,7 @@ public class SyncService {
     private final FileService fs;
     private final InstanceNodeRepository nodeRepository;
     private final com.source.open.util.TransferHistoryRepository transferHistoryRepo;
+    private final SimpMessagingTemplate messagingTemplate;
     private final RestClient restClient = createRestClientWithTimeout();
 
     private boolean isAutoSyncEnabled = false;
@@ -133,6 +135,7 @@ public class SyncService {
                     nodeRepository.save(node);
                 }
             }
+            messagingTemplate.convertAndSend("/topic/files", "changed");
         } finally {
             cleanTempDir();
         }
