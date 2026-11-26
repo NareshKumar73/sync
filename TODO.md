@@ -46,25 +46,29 @@ a backend item above it exists. Nothing in this file is implemented yet.
 10. ~~**Local node table unescaped**~~ — `code.js:523-534`. **Fixed:**
     `node.ipAddress` now goes through `escapeHtml()` in both places it's
     rendered.
-11. **Resumable download buffers the whole file in RAM** —
-    `code.js:864-1041`. `fetchDownloadChunk()` collects every 5MB chunk in
-    `downloadState.chunks[]` and only assembles the `Blob` at the end. The
-    backend allows uploads/downloads up to 1TB — this will exhaust browser
-    memory on exactly the large transfers "resumable" exists for. Needs
-    streaming-to-disk (File System Access API or a service worker); not a
-    one-liner, biggest frontend fix in the list.
-12. **`filterFiles()` can throw and abort mid-search** — `code.js:162`. Missing
-    the `|| ''` guard that the near-identical code in `assignFileIconClasses()`
-    (`code.js:50`) already has.
-13. **Preview video doesn't autoplay** — `code.js:339`. `video.autoplay = true`
-    without `video.muted = true`; browsers block unmuted autoplay.
-14. **Chat avatars need outbound internet** — `code.js:1153`. Default avatars
-    call `api.dicebear.com`; on an offline LAN every avatar is a broken image
-    in an app whose whole point is working without internet. Generate a
-    local initials/color avatar instead.
-15. **`filterByType(type)` reads the implicit global `event`** —
-    `code.js:73`. Fragile; accept `event` as a parameter from the `onclick`
-    handler instead.
+11. ~~**Resumable download buffers the whole file in RAM**~~ —
+    `code.js:864-1041`. **Fixed:** when the browser supports the File System
+    Access API (`showSaveFilePicker`), each chunk is written straight to the
+    picked file via a `FileSystemWritableFileStream` instead of being
+    collected in `downloadState.chunks[]`; that array now only exists as the
+    fallback for browsers without the API, matching prior behavior exactly
+    there. `cancelDownload()` aborts the writable too. Verified with a
+    harness that loads the real function and mocks `showSaveFilePicker`/
+    `fetch`: a simulated 17MB download writes 4 chunks (5+5+5+2MB) straight
+    through with `chunks[]` staying empty throughout, closes the stream on
+    completion, and `cancelDownload()` aborts it mid-transfer.
+12. ~~**`filterFiles()` can throw and abort mid-search**~~ — `code.js:162`.
+    **Fixed:** added the same `|| ''` guard `assignFileIconClasses()` already
+    has.
+13. ~~**Preview video doesn't autoplay**~~ — `code.js:339`. **Fixed:** added
+    `video.muted = true` before `video.autoplay = true`.
+14. ~~**Chat avatars need outbound internet**~~ — `code.js:1153`. **Fixed:**
+    default avatars are now generated locally (an inline SVG data URI with
+    the sender's initial on a color derived from their name) instead of
+    calling `api.dicebear.com`.
+15. ~~**`filterByType(type)` reads the implicit global `event`**~~ —
+    `code.js:73`. **Fixed:** now takes `event` as a parameter; the 6 `onclick`
+    handlers in `index.html` pass it explicitly.
 
 ## Ready now — Frontend: accessibility
 

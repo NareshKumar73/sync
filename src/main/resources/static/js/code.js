@@ -67,7 +67,7 @@ function assignFileIconClasses() {
 }
 
 // File Type Chip Filter
-function filterByType(type) {
+function filterByType(type, event) {
     // Update chip active states
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     event.currentTarget.classList.add('active');
@@ -159,7 +159,7 @@ async function filterFiles() {
     
     const items = document.getElementsByClassName('file-item');
     for (let i = 0; i < items.length; i++) {
-        const name = items[i].getAttribute('data-name').toLowerCase();
+        const name = (items[i].getAttribute('data-name') || '').toLowerCase();
         if (name.includes(filter)) {
             items[i].style.display = 'flex';
         } else {
@@ -342,6 +342,7 @@ function openPreview(url, name, fileType) {
         let video = document.createElement('video');
         video.src = url;
         video.controls = true;
+        video.muted = true; // browsers block unmuted autoplay
         video.autoplay = true;
         video.style.maxWidth = '100%';
         video.style.maxHeight = '80vh';
@@ -891,9 +892,22 @@ async function startDownloadInUI(url, filename, size) {
         totalBytes: parseInt(size) || 0,
         downloadedBytes: 0,
         paused: false,
-        chunks: []
+        chunks: [], // only used as a fallback when File System Access isn't available
+        writable: null
     };
-    
+
+    // Stream straight to disk when the browser supports it, instead of buffering
+    // the whole file in memory first — large files would otherwise exhaust RAM.
+    if (window.showSaveFilePicker) {
+        try {
+            const handle = await window.showSaveFilePicker({ suggestedName: filename });
+            downloadState.writable = await handle.createWritable();
+        } catch (e) {
+            if (e.name === 'AbortError') return; // user cancelled the save dialog
+            console.warn('File System Access unavailable, falling back to in-memory download', e);
+        }
+    }
+
     const statusText = document.getElementById('downloadStatusText');
     const percentageText = document.getElementById('downloadPercentage');
     const progressBar = document.getElementById('downloadProgressBar');
@@ -935,7 +949,7 @@ async function fetchDownloadChunk() {
     const end = Math.min(start + CHUNK_SIZE - 1, downloadState.totalBytes - 1);
     
     if (start >= downloadState.totalBytes) {
-        finishDownload();
+        await finishDownload();
         return;
     }
     
@@ -955,7 +969,11 @@ async function fetchDownloadChunk() {
         }
         
         const blob = await response.blob();
-        downloadState.chunks.push(blob);
+        if (downloadState.writable) {
+            await downloadState.writable.write(blob);
+        } else {
+            downloadState.chunks.push(blob);
+        }
         downloadState.downloadedBytes += blob.size;
         
         const endTime = Date.now();
@@ -1015,24 +1033,32 @@ function cancelDownload() {
     if (currentDownloadController) {
         currentDownloadController.abort();
     }
+    if (downloadState.writable) {
+        downloadState.writable.abort().catch(() => {});
+        downloadState.writable = null;
+    }
     downloadState.chunks = [];
 }
 
-function finishDownload() {
+async function finishDownload() {
     document.getElementById('downloadStatusText').innerText = `Finishing download...`;
     document.getElementById('pauseResumeBtn').disabled = true;
-    
-    const finalBlob = new Blob(downloadState.chunks);
-    const url = URL.createObjectURL(finalBlob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = downloadState.filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
+
+    if (downloadState.writable) {
+        await downloadState.writable.close();
+    } else {
+        const finalBlob = new Blob(downloadState.chunks);
+        const url = URL.createObjectURL(finalBlob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = downloadState.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
     document.getElementById('downloadStatusText').innerText = `Download Complete!`;
     document.getElementById('downloadProgressBar').classList.remove('progress-bar-animated');
     document.getElementById('downloadProgressBar').classList.add('bg-success');
@@ -1152,11 +1178,15 @@ function appendChatMessage(chat, scroll = true) {
     const time = formatDateByTimezone(chat.timestamp);
     const displayName = chat.senderName || chat.senderIp || 'Anonymous';
     
-    // Default avatar if none provided
+    // Default avatar if none provided — generated locally (no outbound internet,
+    // unlike the old api.dicebear.com call, which is pointless on an offline LAN).
     let avatarUrl = chat.senderAvatar;
     if (!avatarUrl) {
         const hash = displayName.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0);
-        avatarUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${hash}`;
+        const hue = Math.abs(hash) % 360;
+        const initial = escapeHtml((displayName.trim()[0] || '?').toUpperCase());
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="hsl(${hue},55%,45%)"/><text x="50%" y="54%" font-family="sans-serif" font-size="18" fill="white" text-anchor="middle" dominant-baseline="middle">${initial}</text></svg>`;
+        avatarUrl = `data:image/svg+xml,${encodeURIComponent(svg)}`;
     }
 
     const isMe = chatProfile.name && chat.senderName === chatProfile.name;
