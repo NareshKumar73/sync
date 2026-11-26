@@ -32,22 +32,20 @@ a backend item above it exists. Nothing in this file is implemented yet.
 
 ## Ready now — Frontend: bugs & security (do first)
 
-7. **Stored/live XSS via chat** — `code.js:1163,1165,1167`. `appendChatMessage`
-   puts `avatarUrl` (into a `src` attribute), `displayName`, and
-   `chat.message` into `innerHTML` unescaped. Any LAN user can set these via
-   the chat profile/send endpoints and run JS in every other viewer's
-   browser. Fix: run all three through the `escapeHtml()` helper already used
-   for clipboard.
-8. **XSS via a peer's file list in global search** — `code.js:207-217`.
-   `result.node.ipAddress`, `f.relativePath || f.name`, and `f.url` (built
-   into an `href`) come from a remote peer's JSON unescaped into `innerHTML`.
-   A malicious/compromised peer, or just a cleverly-named file, can inject
-   script or a `javascript:` URI. Same `escapeHtml()` fix.
-9. **XSS via a peer's data in sync conflicts** — `code.js:709-719`.
-   `loadConflicts()` renders `meta.name`/`path` from a remote peer unescaped.
-   Same fix.
-10. **Local node table unescaped** — `code.js:523-534`. Lower risk
-    (admin-entered), but fix for consistency with #7-9.
+7. ~~**Stored/live XSS via chat**~~ — `code.js:1163,1165,1167`. **Fixed:**
+   `avatarUrl`, `displayName`, and `chat.message` now go through the
+   existing `escapeHtml()` helper before being interpolated into `innerHTML`.
+8. ~~**XSS via a peer's file list in global search**~~ — `code.js:207-217`.
+   **Fixed:** `result.node.ipAddress` and `f.relativePath || f.name` are
+   escaped; `f.url` is only used if it's a same-origin relative path
+   (`startsWith('/')`), so a malicious peer can't supply a `javascript:` URI
+   as the download link.
+9. ~~**XSS via a peer's data in sync conflicts**~~ — `code.js:709-719`.
+   **Fixed:** `meta.name`, `path`, and `meta.size` now go through
+   `escapeHtml()`.
+10. ~~**Local node table unescaped**~~ — `code.js:523-534`. **Fixed:**
+    `node.ipAddress` now goes through `escapeHtml()` in both places it's
+    rendered.
 11. **Resumable download buffers the whole file in RAM** —
     `code.js:864-1041`. `fetchDownloadChunk()` collects every 5MB chunk in
     `downloadState.chunks[]` and only assembles the `Blob` at the end. The
