@@ -204,16 +204,22 @@ async function filterFiles() {
                 if (matchedFiles.length > 0) {
                     globalHtml += `<div class="mb-3 p-3 rounded-3" style="background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant);">
                         <div class="d-flex justify-content-between mb-2 border-bottom pb-2">
-                            <span class="fw-bold" style="color: var(--md-sys-color-on-surface);"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary); font-size: 18px;">dns</span>Node: ${result.node.ipAddress}</span>
-                            <a href="http://${result.node.ipAddress}:${result.node.port}/" target="_blank" class="badge" style="background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); text-decoration: none;">Open Node</a>
+                            <span class="fw-bold" style="color: var(--md-sys-color-on-surface);"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary); font-size: 18px;">dns</span>Node: ${escapeHtml(result.node.ipAddress)}</span>
+                            <a href="http://${escapeHtml(result.node.ipAddress)}:${result.node.port}/" target="_blank" class="badge" style="background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); text-decoration: none;">Open Node</a>
                         </div>`;
-                        
+
                     matchedFiles.forEach(f => {
                         let iconName = f.directory ? 'folder' : 'description';
                         let iconColor = f.directory ? 'var(--file-color-folder)' : 'var(--md-sys-color-secondary)';
+                        // Only trust a relative, same-origin-style path from the peer; never let its response
+                        // control a javascript: URI or similar via f.url.
+                        const safeUrl = (typeof f.url === 'string' && f.url.startsWith('/')) ? f.url : '';
+                        const downloadLink = safeUrl
+                            ? `<a href="http://${escapeHtml(result.node.ipAddress)}:${result.node.port}${escapeHtml(safeUrl)}" class="btn btn-sm py-0" style="color: var(--md-sys-color-primary);" title="Download"><span class="material-symbols-rounded" style="font-size: 18px;">download</span></a>`
+                            : '';
                         globalHtml += `<div class="d-flex justify-content-between align-items-center py-1">
-                            <span class="small" style="color: var(--md-sys-color-on-surface-variant);"><span class="material-symbols-rounded me-2" style="font-size: 16px; color: ${iconColor};">${iconName}</span>${f.relativePath || f.name}</span>
-                            <a href="http://${result.node.ipAddress}:${result.node.port}${f.url}" class="btn btn-sm py-0" style="color: var(--md-sys-color-primary);" title="Download"><span class="material-symbols-rounded" style="font-size: 18px;">download</span></a>
+                            <span class="small" style="color: var(--md-sys-color-on-surface-variant);"><span class="material-symbols-rounded me-2" style="font-size: 16px; color: ${iconColor};">${iconName}</span>${escapeHtml(f.relativePath || f.name)}</span>
+                            ${downloadLink}
                         </div>`;
                         totalGlobalFound++;
                     });
@@ -523,12 +529,12 @@ async function loadNodes() {
         tbody.innerHTML += `
             <tr>
                 <td><span class="status-indicator ${statusClass}"></span></td>
-                <td>${node.ipAddress}</td>
+                <td>${escapeHtml(node.ipAddress)}</td>
                 <td>${node.port}</td>
                 <td class="small text-muted">${lastActive}</td>
                 <td>
                     <button class="file-action-btn" onclick="deleteNode(${node.id})" title="Delete"><span class="material-symbols-rounded" style="color: var(--md-sys-color-error);">delete</span></button>
-                    <a href="http://${node.ipAddress}:${node.port}/" target="_blank" class="file-action-btn ms-1" title="Browse Remote Files"><span class="material-symbols-rounded" style="color: var(--md-sys-color-success);">open_in_new</span></a>
+                    <a href="http://${escapeHtml(node.ipAddress)}:${node.port}/" target="_blank" class="file-action-btn ms-1" title="Browse Remote Files"><span class="material-symbols-rounded" style="color: var(--md-sys-color-success);">open_in_new</span></a>
                 </td>
             </tr>
         `;
@@ -711,8 +717,8 @@ async function loadConflicts() {
         container.innerHTML += `
             <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
                 <div>
-                    <span class="d-block fw-bold text-light">${meta.name} <small class="text-secondary">(${path})</small></span>
-                    <span class="text-muted">Remote Size: ${meta.size} | Remote Date: ${displayDate}</span>
+                    <span class="d-block fw-bold text-light">${escapeHtml(meta.name)} <small class="text-secondary">(${escapeHtml(path)})</small></span>
+                    <span class="text-muted">Remote Size: ${escapeHtml(meta.size)} | Remote Date: ${displayDate}</span>
                 </div>
                 <button class="btn btn-sm btn-outline-warning" onclick="showToast('To resolve, delete local file and sync again.')">Resolve</button>
             </div>
@@ -1160,11 +1166,11 @@ function appendChatMessage(chat, scroll = true) {
 
     const chatHtml = `
         <div class="d-flex align-items-end mb-3 ${alignClass}">
-            <img src="${avatarUrl}" alt="Avatar" class="rounded-circle shadow-sm mx-2" style="width: 40px; height: 40px; object-fit: cover;">
+            <img src="${escapeHtml(avatarUrl)}" alt="Avatar" class="rounded-circle shadow-sm mx-2" style="width: 40px; height: 40px; object-fit: cover;">
             <div class="${textObj}" style="max-width: 75%;">
-                <small class="text-muted mb-1 d-block" style="font-size: 0.75rem;">${displayName} • ${time}</small>
+                <small class="text-muted mb-1 d-block" style="font-size: 0.75rem;">${escapeHtml(displayName)} • ${time}</small>
                 <div class="p-2 rounded shadow-sm ${bubbleClass}" style="word-wrap: break-word; font-size: 0.95rem;">
-                    ${chat.message}
+                    ${escapeHtml(chat.message)}
                 </div>
             </div>
             ${isMe ? `<button class="file-action-btn" onclick="deleteChat(${chat.id})" style="width:28px;height:28px;"><span class="material-symbols-rounded" style="font-size:16px;color:var(--md-sys-color-error);">delete</span></button>` : ''}
