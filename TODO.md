@@ -72,15 +72,24 @@ a backend item above it exists. Nothing in this file is implemented yet.
 
 ## Ready now — Frontend: accessibility
 
-16. **9 of 10 modal close buttons have no `aria-label`** —
-    `index.html:274,321,352,370,401,468,506,546,567,603` (only the QR modal
-    at `:427` has one). Screen readers announce them as unlabeled buttons.
-17. **Per-file selection checkboxes have no accessible name** —
-    `index.html:211`.
-18. **Icon-only file-action buttons rely on `title` only** —
-    `index.html:230-245` (preview/download/zip). Add matching `aria-label`.
-19. **Labels never associated to inputs via `for`/`id`** — e.g.
-    `index.html:325,472,514,518,571,579`.
+16. ~~**9 of 10 modal close buttons have no `aria-label`**~~ —
+    `index.html:274,321,352,370,401,468,506,546,567,603`. **Fixed:** all 11
+    (counting the QR modal that already had one) now have
+    `aria-label="Close"`.
+17. ~~**Per-file selection checkboxes have no accessible name**~~ —
+    `index.html:211`. **Fixed:** added `th:aria-label="${'Select ' + file.name}"`.
+18. ~~**Icon-only file-action buttons rely on `title` only**~~ —
+    `index.html:230-245`. **Fixed:** added a matching `aria-label` to each
+    (preview/resumable-download/direct-download/folder-zip).
+19. ~~**Labels never associated to inputs via `for`/`id`**~~ — e.g.
+    `index.html:325,472,514,518,571,579`. **Fixed:** added `for="<id>"` to
+    each (also caught one more of the same bug at `:575`, `bgImageFile`,
+    not in the original list).
+
+Verified live: loaded the real rendered page and checked every close button,
+file checkbox, and action button has an `aria-label`, and every listed
+`<label>` now resolves via `document.querySelector('label[for="..."]')`. No
+console errors from the new `th:aria-label` Thymeleaf attribute.
 
 ## Ready now — Frontend: quality/maintainability
 

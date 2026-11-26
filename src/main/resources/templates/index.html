@@ -208,7 +208,7 @@
                 <div id="file-list-container" class="stagger-children">
                     <div th:each="file : ${local.files}" class="file-item animate-fade-in" th:data-name="${file.name.toLowerCase()}" th:data-date="${file.lastModifiedEpoch}" th:data-size="${file.sizeInBytes}" th:data-is-dir="${file.directory}">
                         <div class="d-flex align-items-center">
-                            <input class="form-check-input file-check me-3 shadow-none" type="checkbox" th:if="${!file.directory}" th:field="*{filecode}" th:value="${file.code}" onchange="updateSelection()">
+                            <input class="form-check-input file-check me-3 shadow-none" type="checkbox" th:if="${!file.directory}" th:field="*{filecode}" th:value="${file.code}" th:aria-label="${'Select ' + file.name}" onchange="updateSelection()">
                             <div class="file-icon">
                                 <span th:if="${file.directory}" class="material-symbols-rounded icon-filled default-icon" style="color: var(--file-color-folder);">folder</span>
                                 <span th:if="${file.directory}" class="material-symbols-rounded icon-filled rabbit-icon" style="color: var(--md-sys-color-tertiary);">favorite</span>
@@ -227,20 +227,20 @@
                         </div>
 
                         <div class="file-actions">
-                            <button th:if="${!file.directory}" type="button" class="file-action-btn" 
+                            <button th:if="${!file.directory}" type="button" class="file-action-btn"
                                     th:data-url="@{${file.url}}" th:data-name="${file.name}" th:data-type="${file.fileType}"
-                                    onclick="openPreview(this.getAttribute('data-url'), this.getAttribute('data-name'), this.getAttribute('data-type'))" title="Preview">
+                                    onclick="openPreview(this.getAttribute('data-url'), this.getAttribute('data-name'), this.getAttribute('data-type'))" title="Preview" aria-label="Preview">
                                 <span class="material-symbols-rounded">visibility</span>
                             </button>
-                            <button th:if="${!file.directory}" type="button" class="file-action-btn" 
+                            <button th:if="${!file.directory}" type="button" class="file-action-btn"
                                     th:data-url="@{${file.url}}" th:data-name="${file.name}" th:data-size="${file.sizeInBytes}"
-                                    onclick="startDownloadInUI(this.getAttribute('data-url'), this.getAttribute('data-name'), this.getAttribute('data-size'))" title="Resumable Download">
+                                    onclick="startDownloadInUI(this.getAttribute('data-url'), this.getAttribute('data-name'), this.getAttribute('data-size'))" title="Resumable Download" aria-label="Resumable Download">
                                 <span class="material-symbols-rounded" style="color: var(--md-sys-color-primary);">download</span>
                             </button>
-                            <a th:if="${!file.directory}" th:href="@{${file.url}}" class="file-action-btn" title="Direct Download" download>
+                            <a th:if="${!file.directory}" th:href="@{${file.url}}" class="file-action-btn" title="Direct Download" aria-label="Direct Download" download>
                                 <span class="material-symbols-rounded" style="color: var(--md-sys-color-success);">cloud_download</span>
                             </a>
-                            <a th:if="${file.directory}" th:href="@{/zip-folder(path=${file.relativePath})}" class="file-action-btn" title="Download Folder ZIP">
+                            <a th:if="${file.directory}" th:href="@{/zip-folder(path=${file.relativePath})}" class="file-action-btn" title="Download Folder ZIP" aria-label="Download Folder ZIP">
                                 <span class="material-symbols-rounded" style="color: var(--md-sys-color-primary);">folder_zip</span>
                             </a>
                         </div>
@@ -271,7 +271,7 @@
             <div class="modal-content surface-modal">
                 <div class="modal-header">
                     <h5 class="modal-title fw-semibold"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary);">hub</span> Network Sync Nodes</h5>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="row g-3 mb-4">
@@ -318,11 +318,11 @@
             <div class="modal-content surface-modal">
                 <div class="modal-header">
                     <h5 class="modal-title fw-semibold"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary);">cloud_upload</span> Upload Files</h5>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-4">
-                        <label class="form-label fw-medium small mb-2" style="color: var(--md-sys-color-on-surface-variant);">Select files to upload to current directory</label>
+                        <label for="fileInput" class="form-label fw-medium small mb-2" style="color: var(--md-sys-color-on-surface-variant);">Select files to upload to current directory</label>
                         <input class="form-control surface-input shadow-none p-2" type="file" id="fileInput" multiple>
                     </div>
                     <div id="uploadProgressContainer" class="d-none p-3 rounded-3" style="background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant);">
@@ -349,7 +349,7 @@
             <div class="modal-content surface-modal overflow-hidden">
                 <div class="modal-header">
                     <h5 class="modal-title fs-6 fw-semibold" id="previewTitle" style="color: var(--md-sys-color-on-surface);">Preview</h5>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-0 d-flex justify-content-center align-items-center" id="previewBody" style="min-height: 60vh; background: var(--md-sys-color-surface-container-highest);">
                     <!-- Content dynamically loaded -->
@@ -367,7 +367,7 @@
             <div class="modal-content surface-modal">
                 <div class="modal-header">
                     <h5 class="modal-title fw-semibold"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary);">cloud_download</span> Downloading File</h5>
-                    <button type="button" class="btn-close shadow-none" onclick="cancelDownload()" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close shadow-none" onclick="cancelDownload()" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div id="downloadProgressContainer" class="p-3 rounded-3" style="background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant);">
@@ -398,7 +398,7 @@
             <div class="modal-content surface-modal">
                 <div class="modal-header">
                     <h5 class="modal-title fw-semibold"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary);">laptop_mac</span> System IPs</h5>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="table-responsive surface-panel p-2">
@@ -465,11 +465,11 @@
             <div class="modal-content surface-modal">
                 <div class="modal-header">
                     <h5 class="modal-title fw-semibold"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary);">speed</span> LAN/WIFI Speed Test</h5>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4 text-center">
                     <div class="mb-4">
-                        <label class="form-label small fw-medium" style="color: var(--md-sys-color-on-surface-variant);">Payload Size</label>
+                        <label for="speedTestSize" class="form-label small fw-medium" style="color: var(--md-sys-color-on-surface-variant);">Payload Size</label>
                         <select id="speedTestSize" class="form-select surface-input shadow-none w-50 mx-auto text-center">
                             <option value="10">10 MB</option>
                             <option value="50">50 MB</option>
@@ -503,7 +503,7 @@
                     <h5 class="modal-title fw-semibold"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary);">chat_bubble</span> Network Chat</h5>
                     <button type="button" class="btn btn-sm btn-surface ms-auto me-2" onclick="toggleChatSettings()"><span class="material-symbols-rounded">person</span> Profile</button>
                     <button type="button" class="btn btn-sm btn-surface me-2" style="color: var(--md-sys-color-error);" onclick="clearAllChats()">Clear</button>
-                    <button type="button" class="btn-close shadow-none m-0" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close shadow-none m-0" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4 d-flex flex-column" style="height: 60vh;">
                     <!-- Chat Profile Settings (Hidden by default) -->
@@ -511,11 +511,11 @@
                         <h6 class="mb-3" style="color: var(--md-sys-color-primary);">Edit Profile</h6>
                         <div class="row g-2">
                             <div class="col-md-6">
-                                <label class="small" style="color: var(--md-sys-color-on-surface-variant);">Display Name</label>
+                                <label for="chatProfileName" class="small" style="color: var(--md-sys-color-on-surface-variant);">Display Name</label>
                                 <input type="text" id="chatProfileName" class="form-control form-control-sm surface-input" placeholder="Anonymous">
                             </div>
                             <div class="col-md-6">
-                                <label class="small" style="color: var(--md-sys-color-on-surface-variant);">Avatar URL</label>
+                                <label for="chatProfileAvatar" class="small" style="color: var(--md-sys-color-on-surface-variant);">Avatar URL</label>
                                 <input type="text" id="chatProfileAvatar" class="form-control form-control-sm surface-input" placeholder="https://example.com/avatar.png">
                             </div>
                         </div>
@@ -543,7 +543,7 @@
                 <div class="modal-header">
                     <h5 class="modal-title fw-semibold"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary);">content_paste</span> Shared Clipboard</h5>
                     <button type="button" class="btn btn-sm btn-surface ms-auto me-2" style="color: var(--md-sys-color-error);" onclick="clearAllClipboards()">Clear History</button>
-                    <button type="button" class="btn-close shadow-none m-0" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close shadow-none m-0" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4 d-flex flex-column" style="height: 60vh;">
                     <div id="clipboardItems" class="flex-grow-1 overflow-auto mb-3 surface-panel p-3" style="border-radius: 8px;">
@@ -564,19 +564,19 @@
             <div class="modal-content surface-modal">
                 <div class="modal-header">
                     <h5 class="modal-title fw-semibold"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary);">wallpaper</span> Wallpaper Settings</h5>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label fw-medium small" style="color: var(--md-sys-color-on-surface-variant);">Image URL or Base64</label>
+                        <label for="bgImageUrl" class="form-label fw-medium small" style="color: var(--md-sys-color-on-surface-variant);">Image URL or Base64</label>
                         <input type="text" id="bgImageUrl" class="form-control surface-input shadow-none" placeholder="https://example.com/image.jpg">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-medium small" style="color: var(--md-sys-color-on-surface-variant);">Or Upload Local Image</label>
+                        <label for="bgImageFile" class="form-label fw-medium small" style="color: var(--md-sys-color-on-surface-variant);">Or Upload Local Image</label>
                         <input type="file" id="bgImageFile" class="form-control surface-input shadow-none" accept="image/*">
                     </div>
                     <div class="mb-4">
-                        <label class="form-label fw-medium small" style="color: var(--md-sys-color-on-surface-variant);">Sizing Option</label>
+                        <label for="bgSizeSelect" class="form-label fw-medium small" style="color: var(--md-sys-color-on-surface-variant);">Sizing Option</label>
                         <select id="bgSizeSelect" class="form-select surface-input shadow-none">
                             <option value="cover_center_no-repeat">Fill Screen</option>
                             <option value="contain_center_no-repeat">Fit to Screen</option>
@@ -600,7 +600,7 @@
             <div class="modal-content surface-modal">
                 <div class="modal-header border-bottom pb-3">
                     <h5 class="modal-title fw-bold"><span class="material-symbols-rounded me-2" style="color: var(--md-sys-color-primary);">monitoring</span> System Dashboard</h5>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4" style="background: var(--md-sys-color-surface-container-low);">
                     <!-- CPU & Memory -->
