@@ -104,43 +104,80 @@ console errors from the new `th:aria-label` Thymeleaf attribute.
 
 ## Ready now — Frontend: quality/maintainability
 
-20. **No `response.ok` check or `try/catch` on ~12 fetches** — `loadNodes`,
-    `addNode`, `deleteNode`, `testNode`, `loadConflicts`, `loadChats`,
-    `sendChatMessage`, `deleteChat`, `clearAllChats`, `loadClipboards`,
-    `sendClipboardItem`, `deleteClipboard`, `clearAllClipboards`. A failed
-    request either throws unhandled or silently does nothing.
-    `fetchMetrics`/`updateStorageStrip` already show the right pattern —
-    apply it consistently.
-21. **Duplicated file-extension arrays** — `code.js:43-47` and `75-79`. One
-    shared `const`.
-22. **Duplicated clipboard-copy-with-fallback logic** — `copyCurrentUrl`
-    (`:840-861`) vs `copyToClipboard` (`:1286-1316`). Have the former call
-    the latter.
-23. **O(n²) `innerHTML +=` in render loops** — `loadNodes`, `loadConflicts`,
-    `loadClipboards`, chat rendering. Build an array, assign once.
-24. **`CHUNK_SIZE` defined twice** (upload `:359`, download `:927`) with the
-    same value in separate scopes — share one constant.
-25. **Leftover debug `console.log`s** — `code.js:875,968,1111`.
-26. **Hundreds of repeated inline `style="color: var(--md-sys-color-*)"`**
-    duplicating utility classes already in `design.css:442-449`
-    (`.text-primary`, `.text-success`, etc.) — likely why so many theme rules
-    in `design.css` need `!important` (inline styles win over class rules).
-27. **`history.html` duplicates markup instead of using a Thymeleaf
-    fragment** — the transfer-type badge and `<tr>` structure are
-    copy-pasted between the Consolidated and Raw tabs (`:178-189` vs
-    `:215-231`). No `th:fragment`/`th:insert`/`th:replace` used anywhere in
-    either template.
-28. **Dead CSS** — `.file-icon.*-icon` background-tint classes
-    (`design.css:818-845`, never applied — `index.html:212-217` hardcodes
-    inline color instead, so this component's background half never
-    renders), `.theme-chip`/`.theme-dot` (`:1723-1756`, leftover from an
-    earlier design), `.ripple`/`.mobile-overflow` (`:1828-1841`, `:901-910`).
-    Decide per-rule: delete, or (for the file-icon tints specifically) wire
-    them up since they look like an unfinished feature rather than true dead
-    code.
-29. **Two different timezone-picker widgets for the same feature** — custom
-    chip UI over a hidden `<select>` on `index.html:50-83`, a plain visible
-    `<select>` on `history.html:41-47`. Pick one.
+20. ~~**No `response.ok` check or `try/catch` on ~12 fetches**~~ —
+    `loadNodes`, `addNode`, `deleteNode`, `testNode`, `loadConflicts`,
+    `loadChats`, `sendChatMessage`, `deleteChat`, `clearAllChats`,
+    `loadClipboards`, `sendClipboardItem`, `deleteClipboard`,
+    `clearAllClipboards`. **Fixed:** all 12 now check `res.ok` and wrap the
+    call in `try/catch`, matching `fetchMetrics`/`updateStorageStrip`'s
+    existing pattern — a failed request now shows a toast or logs instead of
+    throwing unhandled or silently doing nothing.
+21. ~~**Duplicated file-extension arrays**~~ — `code.js:43-47` and `75-79`.
+    **Fixed:** both now read from one shared `FILE_EXT_GROUPS` constant.
+22. ~~**Duplicated clipboard-copy-with-fallback logic**~~ — `copyCurrentUrl`
+    vs `copyToClipboard`. **Fixed:** `copyCurrentUrl` now just calls
+    `copyToClipboard(null, text, message)`; `copyToClipboard` falls back to
+    a toast when no button is given instead of touching `btn.innerHTML`.
+23. ~~**O(n²) `innerHTML +=` in render loops**~~ — `loadNodes`,
+    `loadConflicts`, `loadClipboards`, chat rendering. **Fixed:** all four
+    now build an array via `.map()` and assign `innerHTML` once via
+    `.join('')`. `appendChatMessage` (single live message) and
+    `renderChatMessages` (bulk) now share one `buildChatHtml()` string
+    builder instead of the bulk path calling the single-append path N times.
+24. ~~**`CHUNK_SIZE` defined twice**~~ — **Fixed:** removed the local
+    redeclaration in `fetchDownloadChunk()`; it now uses the one top-level
+    `const` already defined for upload.
+25. ~~**Leftover debug `console.log`s**~~ — **Fixed:** removed all three.
+26. ~~**Hundreds of repeated inline `style="color: var(--md-sys-color-*)"`**~~
+    — **Fixed:** mechanically converted every *pure* single-property
+    occurrence (76 in `index.html`, 4 in `history.html`) to the matching
+    utility class (`.text-primary`, `.text-danger`, etc.), adding one
+    missing class (`.text-tertiary`) to `design.css`. Mixed styles like
+    `style="font-size: 18px; color: ...)"` were deliberately left alone —
+    the utility classes only cover `color` on its own. The conversion script
+    introduced two duplicate `class="..."` attributes (where another
+    attribute sat between `class` and the old `style`) — caught and fixed
+    both by hand before verifying.
+27. ~~**`history.html` duplicates markup instead of using a Thymeleaf
+    fragment**~~ — **Fixed:** the transfer-type badge block is now a
+    `th:fragment="typeBadge"` referenced via `th:insert="~{::typeBadge}"`
+    from the Raw tab. Left as a **parameterless** fragment on purpose: a
+    parameterized version (`typeBadge(history)`, called as
+    `~{::typeBadge(${history})}`) parsed and ran, but the call-site's
+    `history` argument silently didn't bind the way the fragment body
+    expected, breaking `history.type` lookups inside it — easy to not notice
+    since Thymeleaf only throws once that line is reached. Parameterless
+    works because both tables already bind their own `history` loop
+    variable via `th:each`, so the fragment just shares that context
+    directly; verified by fetching `/history` and checking the response
+    wasn't truncated (an in-template exception mid-stream shows up as the
+    client seeing an incomplete response, not a clean 500). The surrounding
+    `<tr>` row structure itself was left duplicated — the Raw table has one
+    extra column (the delete action), and a shared row fragment would need
+    a parameter just for that, which didn't seem worth it for one column.
+28. **Dead CSS — partially fixed, one audit claim was wrong.**
+    `.theme-chip`/`.theme-dot` and `.ripple`/`.mobile-overflow` were
+    genuinely dead (zero references anywhere, confirmed by grep) and are
+    now deleted. **The `.file-icon.*-icon` background-tint classes are NOT
+    dead** — checked the live computed style and the background renders
+    exactly as designed (`#FFF3D6` for folders, matching
+    `--file-color-folder-bg`); the earlier audit's claim here was incorrect.
+    No change needed there.
+29. ~~**Two different timezone-picker widgets for the same feature**~~ —
+    **Fixed:** `history.html` now uses the same chip-picker UI as
+    `index.html` (copied the markup, plus local `selectTimezone()`/
+    `updateTzLiveClock()` functions calling `history.html`'s own
+    `formatHistoryDates()` instead of `index.html`'s `formatDates()` —
+    kept duplicated rather than shared, matching `history.html`'s existing
+    pattern of being fully self-contained with its own copy of `showToast`
+    etc., not pulling in `code.js`).
+
+Verified live end-to-end after a full server restart (not just unit-level):
+reloaded both pages, exercised the search/filter/icon-color/delete-button
+rendering on `index.html`, fetched `/history` directly and confirmed the
+response completes without truncation, opened the new timezone picker there
+and confirmed clicking a chip updates the zone label, `localStorage`, and
+the visible dates — matching `index.html`'s behavior exactly.
 
 ## Frontend work, now unblocked (backend #1-3 are done)
 

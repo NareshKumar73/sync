@@ -447,6 +447,7 @@ body {
 .text-danger { color: var(--md-sys-color-error) !important; }
 .text-warning { color: var(--md-sys-color-warning) !important; }
 .text-info { color: var(--md-sys-color-secondary) !important; }
+.text-tertiary { color: var(--md-sys-color-tertiary) !important; }
 .bg-light, .bg-white { background-color: var(--md-sys-color-surface-container-low) !important; }
 
 /* ===================================================================
@@ -896,17 +897,6 @@ body {
 .file-action-btn:hover {
     background: var(--md-sys-elevation-2);
     color: var(--md-sys-color-primary);
-}
-
-/* Mobile overflow menu trigger */
-.file-item .mobile-overflow {
-    display: flex;
-}
-
-@media (min-width: 768px) {
-    .file-item .mobile-overflow {
-        display: none;
-    }
 }
 
 /* Mobile responsive file items */
@@ -1718,44 +1708,6 @@ body {
 }
 
 /* ===================================================================
-   33. THEME PICKER CHIPS
-   =================================================================== */
-.theme-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: var(--md-sys-shape-full);
-    border: 2px solid var(--md-sys-color-outline-variant);
-    background: transparent;
-    color: var(--md-sys-color-on-surface);
-    cursor: pointer;
-    transition: all var(--md-sys-motion-duration-short) ease;
-    font-family: 'Outfit', sans-serif;
-    font-weight: 500;
-    font-size: 0.8125rem;
-}
-
-.theme-chip:hover {
-    border-color: var(--md-sys-color-outline);
-    background: var(--md-sys-elevation-1);
-}
-
-.theme-chip.active {
-    border-color: var(--md-sys-color-primary);
-    background: var(--md-sys-color-primary-container);
-    color: var(--md-sys-color-on-primary-container);
-}
-
-.theme-dot {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 2px solid rgba(0,0,0,0.08);
-    flex-shrink: 0;
-}
-
-/* ===================================================================
    34. NAV TABS (M3 Style)
    =================================================================== */
 .nav-pills .nav-link {
@@ -1825,21 +1777,6 @@ body {
 /* ===================================================================
    38. RIPPLE EFFECT
    =================================================================== */
-.ripple {
-    position: relative;
-    overflow: hidden;
-}
-
-.ripple::after {
-    content: '';
-    position: absolute;
-    border-radius: 50%;
-    background: var(--md-sys-color-primary);
-    opacity: 0;
-    transform: scale(0);
-    pointer-events: none;
-}
-
 /* ===================================================================
    39. DRAG & DROP OVERLAY
    =================================================================== */

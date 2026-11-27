@@ -2,6 +2,15 @@
 // SYNC-KING — Material You Expressive JavaScript
 // ===================================================================
 
+// Shared file-extension groupings (used for both icon assignment and the type filter chips)
+const FILE_EXT_GROUPS = {
+    image: ['jpg','jpeg','png','gif','svg','webp','bmp','ico'],
+    video: ['mp4','webm','ogg','avi','mkv','mov','flv'],
+    document: ['pdf','doc','docx','txt','md','html','json','xml','csv','xls','xlsx','ppt','pptx'],
+    archive: ['zip','rar','7z','tar','gz','bz2'],
+    audio: ['mp3','wav','ogg','flac','aac','m4a','wma']
+};
+
 // Toast Notification System (replaces alert())
 function showToast(message, duration = 3000) {
     const container = document.getElementById('toastContainer');
@@ -40,27 +49,22 @@ function formatDateByTimezone(epochOrDateString) {
 // File Type Icon Assignment
 function assignFileIconClasses() {
     const fileItems = document.querySelectorAll('.file-item');
-    const imageExts = ['jpg','jpeg','png','gif','svg','webp','bmp','ico'];
-    const videoExts = ['mp4','webm','ogg','avi','mkv','mov','flv'];
-    const docExts = ['pdf','doc','docx','txt','md','html','json','xml','csv','xls','xlsx','ppt','pptx'];
-    const archiveExts = ['zip','rar','7z','tar','gz','bz2'];
-    const audioExts = ['mp3','wav','ogg','flac','aac','m4a','wma'];
-    
+
     fileItems.forEach(item => {
         const name = (item.getAttribute('data-name') || '').toLowerCase();
         const isDir = item.getAttribute('data-is-dir') === 'true';
         const iconEl = item.querySelector('.file-icon');
         if (!iconEl) return;
-        
+
         if (isDir) {
             iconEl.classList.add('folder-icon');
         } else {
             const ext = name.split('.').pop();
-            if (imageExts.includes(ext)) iconEl.classList.add('image-icon');
-            else if (videoExts.includes(ext)) iconEl.classList.add('video-icon');
-            else if (docExts.includes(ext)) iconEl.classList.add('document-icon');
-            else if (archiveExts.includes(ext)) iconEl.classList.add('archive-icon');
-            else if (audioExts.includes(ext)) iconEl.classList.add('audio-icon');
+            if (FILE_EXT_GROUPS.image.includes(ext)) iconEl.classList.add('image-icon');
+            else if (FILE_EXT_GROUPS.video.includes(ext)) iconEl.classList.add('video-icon');
+            else if (FILE_EXT_GROUPS.document.includes(ext)) iconEl.classList.add('document-icon');
+            else if (FILE_EXT_GROUPS.archive.includes(ext)) iconEl.classList.add('archive-icon');
+            else if (FILE_EXT_GROUPS.audio.includes(ext)) iconEl.classList.add('audio-icon');
             else iconEl.classList.add('generic-icon');
         }
     });
@@ -72,30 +76,24 @@ function filterByType(type, event) {
     document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     event.currentTarget.classList.add('active');
     
-    const imageExts = ['jpg','jpeg','png','gif','svg','webp','bmp','ico'];
-    const videoExts = ['mp4','webm','ogg','avi','mkv','mov','flv'];
-    const docExts = ['pdf','doc','docx','txt','md','html','json','xml','csv','xls','xlsx','ppt','pptx'];
-    const archiveExts = ['zip','rar','7z','tar','gz','bz2'];
-    const audioExts = ['mp3','wav','ogg','flac','aac','m4a','wma'];
-    
     const items = document.querySelectorAll('.file-item');
     items.forEach(item => {
         const name = (item.getAttribute('data-name') || '').toLowerCase();
         const isDir = item.getAttribute('data-is-dir') === 'true';
-        
+
         if (type === 'all') {
             item.style.display = 'flex';
             return;
         }
-        
+
         const ext = name.split('.').pop();
         let match = false;
-        
-        if (type === 'image') match = imageExts.includes(ext);
-        else if (type === 'video') match = videoExts.includes(ext);
-        else if (type === 'document') match = docExts.includes(ext) || isDir;
-        else if (type === 'archive') match = archiveExts.includes(ext);
-        else if (type === 'audio') match = audioExts.includes(ext);
+
+        if (type === 'image') match = FILE_EXT_GROUPS.image.includes(ext);
+        else if (type === 'video') match = FILE_EXT_GROUPS.video.includes(ext);
+        else if (type === 'document') match = FILE_EXT_GROUPS.document.includes(ext) || isDir;
+        else if (type === 'archive') match = FILE_EXT_GROUPS.archive.includes(ext);
+        else if (type === 'audio') match = FILE_EXT_GROUPS.audio.includes(ext);
         
         item.style.display = match ? 'flex' : 'none';
     });
@@ -584,62 +582,79 @@ document.getElementById('networkModal').addEventListener('hide.bs.modal', functi
 });
 
 async function loadNodes() {
-    const res = await fetch('/api/nodes');
-    const nodes = await res.json();
-    const tbody = document.getElementById('nodesTableBody');
-    tbody.innerHTML = '';
-    
-    nodes.forEach(node => {
-        const statusClass = node.isWorking ? 'status-online' : 'status-offline';
-        const lastActive = node.lastActive ? formatDateByTimezone(node.lastActive) : 'Never';
-        
-        tbody.innerHTML += `
-            <tr>
-                <td><span class="status-indicator ${statusClass}"></span></td>
-                <td>${escapeHtml(node.ipAddress)}</td>
-                <td>${node.port}</td>
-                <td class="small text-muted">${lastActive}</td>
-                <td>
-                    <button class="file-action-btn" onclick="deleteNode(${node.id})" title="Delete"><span class="material-symbols-rounded" style="color: var(--md-sys-color-error);">delete</span></button>
-                    <a href="http://${escapeHtml(node.ipAddress)}:${node.port}/" target="_blank" class="file-action-btn ms-1" title="Browse Remote Files"><span class="material-symbols-rounded" style="color: var(--md-sys-color-success);">open_in_new</span></a>
-                </td>
-            </tr>
-        `;
-    });
+    try {
+        const res = await fetch('/api/nodes');
+        if (!res.ok) throw new Error('Failed to load nodes');
+        const nodes = await res.json();
+        const tbody = document.getElementById('nodesTableBody');
+
+        tbody.innerHTML = nodes.map(node => {
+            const statusClass = node.isWorking ? 'status-online' : 'status-offline';
+            const lastActive = node.lastActive ? formatDateByTimezone(node.lastActive) : 'Never';
+            return `
+                <tr>
+                    <td><span class="status-indicator ${statusClass}"></span></td>
+                    <td>${escapeHtml(node.ipAddress)}</td>
+                    <td>${node.port}</td>
+                    <td class="small text-muted">${lastActive}</td>
+                    <td>
+                        <button class="file-action-btn" onclick="deleteNode(${node.id})" title="Delete"><span class="material-symbols-rounded" style="color: var(--md-sys-color-error);">delete</span></button>
+                        <a href="http://${escapeHtml(node.ipAddress)}:${node.port}/" target="_blank" class="file-action-btn ms-1" title="Browse Remote Files"><span class="material-symbols-rounded" style="color: var(--md-sys-color-success);">open_in_new</span></a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error('Failed to load nodes', e);
+    }
 }
 
 async function addNode() {
     const ip = document.getElementById('nodeIp').value;
     const port = document.getElementById('nodePort').value;
     if (!ip || !port) return;
-    
-    await fetch('/api/nodes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ipAddress: ip, port: port, alias: ip })
-    });
-    
-    document.getElementById('nodeIp').value = '';
-    loadNodes();
+
+    try {
+        const res = await fetch('/api/nodes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ipAddress: ip, port: port, alias: ip })
+        });
+        if (!res.ok) throw new Error('Failed to add node');
+        document.getElementById('nodeIp').value = '';
+        loadNodes();
+    } catch (e) {
+        showToast('Failed to add node');
+    }
 }
 
 async function testNode() {
     const ip = document.getElementById('nodeIp').value;
     const port = document.getElementById('nodePort').value;
     if (!ip || !port) return;
-    
-    const res = await fetch('/api/nodes/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ipAddress: ip, port: port })
-    });
-    const result = await res.json();
-    showToast(result.message);
+
+    try {
+        const res = await fetch('/api/nodes/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ipAddress: ip, port: port })
+        });
+        if (!res.ok) throw new Error('Test request failed');
+        const result = await res.json();
+        showToast(result.message);
+    } catch (e) {
+        showToast('Failed to test node');
+    }
 }
 
 async function deleteNode(id) {
-    await fetch('/api/nodes/' + id, { method: 'DELETE' });
-    loadNodes();
+    try {
+        const res = await fetch('/api/nodes/' + id, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Delete failed');
+        loadNodes();
+    } catch (e) {
+        showToast('Failed to delete node');
+    }
 }
 
 // Sync Controls
@@ -772,27 +787,32 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadConflicts() {
-    const res = await fetch('/api/sync/conflicts');
-    const conflictsMap = await res.json();
-    const container = document.getElementById('conflictsContainer');
-    container.innerHTML = '';
-    
-    if (Object.keys(conflictsMap).length === 0) {
-        container.innerHTML = '<span class="text-muted">No conflicts detected.</span>';
-        return;
-    }
+    try {
+        const res = await fetch('/api/sync/conflicts');
+        if (!res.ok) throw new Error('Failed to load conflicts');
+        const conflictsMap = await res.json();
+        const container = document.getElementById('conflictsContainer');
 
-    for (const [path, meta] of Object.entries(conflictsMap)) {
-        let displayDate = formatDateByTimezone(meta.lastModifiedEpoch || meta.lastModified);
-        container.innerHTML += `
-            <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
-                <div>
-                    <span class="d-block fw-bold text-light">${escapeHtml(meta.name)} <small class="text-secondary">(${escapeHtml(path)})</small></span>
-                    <span class="text-muted">Remote Size: ${escapeHtml(meta.size)} | Remote Date: ${displayDate}</span>
+        const entries = Object.entries(conflictsMap);
+        if (entries.length === 0) {
+            container.innerHTML = '<span class="text-muted">No conflicts detected.</span>';
+            return;
+        }
+
+        container.innerHTML = entries.map(([path, meta]) => {
+            const displayDate = formatDateByTimezone(meta.lastModifiedEpoch || meta.lastModified);
+            return `
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
+                    <div>
+                        <span class="d-block fw-bold text-light">${escapeHtml(meta.name)} <small class="text-secondary">(${escapeHtml(path)})</small></span>
+                        <span class="text-muted">Remote Size: ${escapeHtml(meta.size)} | Remote Date: ${displayDate}</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-warning" onclick="showToast('To resolve, delete local file and sync again.')">Resolve</button>
                 </div>
-                <button class="btn btn-sm btn-outline-warning" onclick="showToast('To resolve, delete local file and sync again.')">Resolve</button>
-            </div>
-        `;
+            `;
+        }).join('');
+    } catch (e) {
+        console.error('Failed to load conflicts', e);
     }
 }
 
@@ -914,26 +934,7 @@ async function showQrCode() {
 }
 
 function copyCurrentUrl() {
-    const text = window.location.href;
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('Link copied to clipboard!');
-        });
-    } else {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "absolute";
-        textArea.style.left = "-999999px";
-        document.body.appendChild(textArea);
-        textArea.select();
-        try {
-            document.execCommand('copy');
-            showToast('Link copied to clipboard!');
-        } catch (error) {
-            console.error("Failed to copy URL", error);
-        }
-        document.body.removeChild(textArea);
-    }
+    copyToClipboard(null, window.location.href, 'Link copied to clipboard!');
 }
 
 // Resumable Download UI Logic
@@ -948,8 +949,6 @@ let downloadState = {
 };
 
 async function startDownloadInUI(url, filename, size) {
-    console.log('Starting download:', { url, filename, size });
-    
     if (!url || !filename) {
         console.error('Missing download info');
         return;
@@ -1012,8 +1011,7 @@ async function startDownloadInUI(url, filename, size) {
 
 async function fetchDownloadChunk() {
     if (downloadState.paused) return;
-    
-    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
+
     const start = downloadState.downloadedBytes;
     const end = Math.min(start + CHUNK_SIZE - 1, downloadState.totalBytes - 1);
     
@@ -1058,7 +1056,7 @@ async function fetchDownloadChunk() {
         fetchDownloadChunk();
     } catch (e) {
         if (e.name === 'AbortError') {
-            console.log('Download chunk aborted (paused/cancelled)');
+            // expected: pause/cancel aborts the in-flight chunk request
         } else {
             console.error('Download error:', e);
             document.getElementById('downloadStatusText').innerText = 'Error downloading file.';
@@ -1209,7 +1207,6 @@ function connectWebSocket() {
     stompClient = Stomp.over(socket);
     stompClient.debug = null; // disable debug logs
     stompClient.connect({}, function (frame) {
-        console.log('Connected: ' + frame);
         stompClient.subscribe('/topic/public', function (chatMessage) {
             const chat = JSON.parse(chatMessage.body);
             window.currentChats.push(chat);
@@ -1240,23 +1237,32 @@ document.getElementById('chatModal')?.addEventListener('show.bs.modal', () => {
 window.currentChats = [];
 
 async function loadChats() {
-    const res = await fetch('/api/chat');
-    window.currentChats = await res.json();
-    renderChatMessages(window.currentChats);
+    try {
+        const res = await fetch('/api/chat');
+        if (!res.ok) throw new Error('Failed to load chat history');
+        window.currentChats = await res.json();
+        renderChatMessages(window.currentChats);
+    } catch (e) {
+        console.error('Failed to load chat history', e);
+    }
 }
 
 function renderChatMessages(chats) {
     const container = document.getElementById('chatMessages');
-    container.innerHTML = '';
-    chats.forEach(chat => appendChatMessage(chat, false));
+    container.innerHTML = chats.map(buildChatHtml).join('');
     container.scrollTop = container.scrollHeight;
 }
 
-function appendChatMessage(chat, scroll = true) {
+function appendChatMessage(chat) {
     const container = document.getElementById('chatMessages');
+    container.innerHTML += buildChatHtml(chat);
+    container.scrollTop = container.scrollHeight;
+}
+
+function buildChatHtml(chat) {
     const time = formatDateByTimezone(chat.timestamp);
     const displayName = chat.senderName || chat.senderIp || 'Anonymous';
-    
+
     // Default avatar if none provided — generated locally (no outbound internet,
     // unlike the old api.dicebear.com call, which is pointless on an offline LAN).
     let avatarUrl = chat.senderAvatar;
@@ -1273,7 +1279,7 @@ function appendChatMessage(chat, scroll = true) {
     const alignClass = isMe ? 'flex-row-reverse' : '';
     const textObj = isMe ? 'text-end' : 'text-start';
 
-    const chatHtml = `
+    return `
         <div class="d-flex align-items-end mb-3 ${alignClass}">
             <img src="${escapeHtml(avatarUrl)}" alt="Avatar" class="rounded-circle shadow-sm mx-2" style="width: 40px; height: 40px; object-fit: cover;">
             <div class="${textObj}" style="max-width: 75%;">
@@ -1285,48 +1291,57 @@ function appendChatMessage(chat, scroll = true) {
             ${isMe ? `<button class="file-action-btn" onclick="deleteChat(${chat.id})" style="width:28px;height:28px;"><span class="material-symbols-rounded" style="font-size:16px;color:var(--md-sys-color-error);">delete</span></button>` : ''}
         </div>
     `;
-    
-    container.innerHTML += chatHtml;
-    if (scroll) {
-        container.scrollTop = container.scrollHeight;
-    }
 }
 
 async function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
     if (!msg) return;
-    
-    if (stompClient && stompClient.connected) {
-        const chatMessage = {
-            message: msg,
-            senderName: chatProfile.name,
-            senderAvatar: chatProfile.avatar
-        };
-        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
-        input.value = '';
-    } else {
-        // Fallback to REST
-        await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: msg, senderName: chatProfile.name, senderAvatar: chatProfile.avatar })
-        });
-        input.value = '';
-        loadChats();
+
+    try {
+        if (stompClient && stompClient.connected) {
+            const chatMessage = {
+                message: msg,
+                senderName: chatProfile.name,
+                senderAvatar: chatProfile.avatar
+            };
+            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+            input.value = '';
+        } else {
+            // Fallback to REST
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, senderName: chatProfile.name, senderAvatar: chatProfile.avatar })
+            });
+            if (!res.ok) throw new Error('Failed to send message');
+            input.value = '';
+            loadChats();
+        }
+    } catch (e) {
+        showToast('Failed to send message');
     }
 }
 
 async function deleteChat(id) {
-    if(!id) return;
-    await fetch(`/api/chat/${id}`, { method: 'DELETE' });
-    loadChats();
+    if (!id) return;
+    try {
+        const res = await fetch(`/api/chat/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Delete failed');
+        loadChats();
+    } catch (e) {
+        showToast('Failed to delete message');
+    }
 }
 
 async function clearAllChats() {
-    if (confirm('Are you sure you want to clear all chat history?')) {
-        await fetch('/api/chat', { method: 'DELETE' });
+    if (!confirm('Are you sure you want to clear all chat history?')) return;
+    try {
+        const res = await fetch('/api/chat', { method: 'DELETE' });
+        if (!res.ok) throw new Error('Clear failed');
         loadChats();
+    } catch (e) {
+        showToast('Failed to clear chat history');
     }
 }
 
@@ -1348,58 +1363,81 @@ function copyClipboardItem(btn) {
 }
 
 async function loadClipboards() {
-    const res = await fetch('/api/clipboard');
-    const items = await res.json();
-    const container = document.getElementById('clipboardItems');
-    container.innerHTML = '';
-    items.forEach(item => {
-        const time = formatDateByTimezone(item.timestamp);
-        const safeContent = escapeHtml(item.content);
-        const encodedContent = encodeURIComponent(item.content);
-        container.innerHTML += `
-            <div class="mb-3 p-3 rounded-3" style="background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant);">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <small style="color: var(--md-sys-color-on-surface-variant);">${escapeHtml(item.senderIp) || 'Unknown'} - ${time}</small>
-                    <div>
-                        <button class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" data-clipboard="${encodedContent}" onclick="copyClipboardItem(this)"><span class="material-symbols-rounded" style="font-size:14px;">content_copy</span> Copy</button>
-                        <button class="file-action-btn" style="width:28px;height:28px;display:inline-flex;" onclick="deleteClipboard(${item.id})"><span class="material-symbols-rounded" style="font-size:16px;color:var(--md-sys-color-error);">delete</span></button>
+    try {
+        const res = await fetch('/api/clipboard');
+        if (!res.ok) throw new Error('Failed to load clipboard');
+        const items = await res.json();
+        const container = document.getElementById('clipboardItems');
+
+        container.innerHTML = items.map(item => {
+            const time = formatDateByTimezone(item.timestamp);
+            const safeContent = escapeHtml(item.content);
+            const encodedContent = encodeURIComponent(item.content);
+            return `
+                <div class="mb-3 p-3 rounded-3" style="background: var(--md-sys-color-surface-container-low); border: 1px solid var(--md-sys-color-outline-variant);">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small style="color: var(--md-sys-color-on-surface-variant);">${escapeHtml(item.senderIp) || 'Unknown'} - ${time}</small>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" data-clipboard="${encodedContent}" onclick="copyClipboardItem(this)"><span class="material-symbols-rounded" style="font-size:14px;">content_copy</span> Copy</button>
+                            <button class="file-action-btn" style="width:28px;height:28px;display:inline-flex;" onclick="deleteClipboard(${item.id})"><span class="material-symbols-rounded" style="font-size:16px;color:var(--md-sys-color-error);">delete</span></button>
+                        </div>
                     </div>
+                    <div style="color: var(--md-sys-color-on-surface); white-space: pre-wrap; word-wrap: break-word;">${safeContent}</div>
                 </div>
-                <div style="color: var(--md-sys-color-on-surface); white-space: pre-wrap; word-wrap: break-word;">${safeContent}</div>
-            </div>
-        `;
-    });
-    container.scrollTop = container.scrollHeight;
+            `;
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+    } catch (e) {
+        console.error('Failed to load clipboard', e);
+    }
 }
 
 async function sendClipboardItem() {
     const input = document.getElementById('clipboardInput');
     const content = input.value.trim();
     if (!content) return;
-    
-    await fetch('/api/clipboard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: content })
-    });
-    input.value = '';
-    loadClipboards();
-}
 
-async function deleteClipboard(id) {
-    await fetch(`/api/clipboard/${id}`, { method: 'DELETE' });
-    loadClipboards();
-}
-
-async function clearAllClipboards() {
-    if (confirm('Are you sure you want to clear all clipboard history?')) {
-        await fetch('/api/clipboard', { method: 'DELETE' });
+    try {
+        const res = await fetch('/api/clipboard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: content })
+        });
+        if (!res.ok) throw new Error('Failed to send clipboard item');
+        input.value = '';
         loadClipboards();
+    } catch (e) {
+        showToast('Failed to send clipboard item');
     }
 }
 
-function copyToClipboard(btn, text) {
+async function deleteClipboard(id) {
+    try {
+        const res = await fetch(`/api/clipboard/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Delete failed');
+        loadClipboards();
+    } catch (e) {
+        showToast('Failed to delete clipboard item');
+    }
+}
+
+async function clearAllClipboards() {
+    if (!confirm('Are you sure you want to clear all clipboard history?')) return;
+    try {
+        const res = await fetch('/api/clipboard', { method: 'DELETE' });
+        if (!res.ok) throw new Error('Clear failed');
+        loadClipboards();
+    } catch (e) {
+        showToast('Failed to clear clipboard history');
+    }
+}
+
+function copyToClipboard(btn, text, toastMessage) {
     const onSuccess = () => {
+        if (!btn) {
+            showToast(toastMessage || 'Copied to clipboard!');
+            return;
+        }
         const originalText = btn.innerHTML;
         btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:14px;">check</span> Copied!';
         btn.classList.replace('btn-outline-secondary', 'btn-success');
