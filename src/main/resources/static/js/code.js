@@ -101,6 +101,72 @@ function filterByType(type, event) {
     });
 }
 
+// File/folder create, rename, delete
+function createFolderPrompt() {
+    const name = prompt('New folder name:');
+    if (!name) return;
+    if (name.includes('/') || name.includes('\\') || name.includes('..')) {
+        showToast('Invalid folder name');
+        return;
+    }
+    const currentPath = new URLSearchParams(window.location.search).get('path') || '';
+    const relativePath = currentPath ? `${currentPath}/${name}` : name;
+
+    fetch(`/folder?relativePath=${encodeURIComponent(relativePath)}`, { method: 'POST' })
+        .then(res => {
+            if (!res.ok) throw new Error('Create folder failed');
+            showToast(`Folder "${name}" created`);
+            setTimeout(() => window.location.reload(), 800);
+        })
+        .catch(() => showToast(`Failed to create folder "${name}"`));
+}
+
+function deleteItem(btn) {
+    const isDir = btn.closest('.file-item').getAttribute('data-is-dir') === 'true';
+    const name = btn.getAttribute('data-name');
+    if (!confirm(`Delete "${name}"? It will be moved to trash.`)) return;
+
+    const url = isDir
+        ? `/folder?path=${encodeURIComponent(btn.getAttribute('data-path'))}`
+        : `/files?filecode=${encodeURIComponent(btn.getAttribute('data-filecode'))}`;
+
+    fetch(url, { method: 'DELETE' })
+        .then(res => {
+            if (!res.ok) throw new Error('Delete failed');
+            showToast(`Deleted "${name}"`);
+            setTimeout(() => window.location.reload(), 800);
+        })
+        .catch(() => showToast(`Failed to delete "${name}"`));
+}
+
+function renameItem(btn) {
+    const isDir = btn.closest('.file-item').getAttribute('data-is-dir') === 'true';
+    const oldName = btn.getAttribute('data-name');
+    const oldPath = btn.getAttribute('data-path');
+    const newName = prompt(`Rename "${oldName}" to:`, oldName);
+    if (!newName || newName === oldName) return;
+    if (newName.includes('/') || newName.includes('\\') || newName.includes('..')) {
+        showToast('Invalid name');
+        return;
+    }
+
+    // Keep it in the same parent folder; swap only the final path segment.
+    const parent = oldPath.includes('/') ? oldPath.slice(0, oldPath.lastIndexOf('/') + 1) : '';
+    const newPath = parent + newName;
+
+    const url = isDir
+        ? `/folder/rename?path=${encodeURIComponent(oldPath)}&newRelativePath=${encodeURIComponent(newPath)}`
+        : `/files/rename?filecode=${encodeURIComponent(btn.getAttribute('data-filecode'))}&newRelativePath=${encodeURIComponent(newPath)}`;
+
+    fetch(url, { method: 'PUT' })
+        .then(res => {
+            if (!res.ok) throw new Error('Rename failed');
+            showToast(`Renamed to "${newName}"`);
+            setTimeout(() => window.location.reload(), 800);
+        })
+        .catch(() => showToast(`Failed to rename "${oldName}"`));
+}
+
 // Storage Stats Strip
 async function updateStorageStrip() {
     try {
@@ -697,7 +763,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     
     // Assign file icon classes based on extension
     assignFileIconClasses();
-    
+
+    // Live file-list updates (also used for chat); safe to call once up front.
+    connectWebSocket();
+
     // Update storage strip
     updateStorageStrip();
 });
@@ -1145,6 +1214,16 @@ function connectWebSocket() {
             const chat = JSON.parse(chatMessage.body);
             window.currentChats.push(chat);
             appendChatMessage(chat);
+        });
+        stompClient.subscribe('/topic/files', function () {
+            // Avoid reloading out from under an open modal (an in-progress upload
+            // or resumable download keeps its modal open for the whole transfer).
+            if (document.body.classList.contains('modal-open')) {
+                showToast('Files changed on this device. Refresh when ready.');
+                return;
+            }
+            showToast('Files changed — refreshing...', 1200);
+            setTimeout(() => window.location.reload(), 1200);
         });
     }, function(error) {
         console.error('STOMP error:', error);

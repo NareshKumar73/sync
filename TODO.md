@@ -144,13 +144,33 @@ console errors from the new `th:aria-label` Thymeleaf attribute.
 
 ## Frontend work, now unblocked (backend #1-3 are done)
 
-30. **Delete/rename UI** (buttons, confirm dialog) — backend ready:
-    `DELETE`/`PUT .../rename` on `/files` and `/folder`.
-31. **Create-folder UI** (input + button next to upload) — backend ready:
-    `POST /folder`.
-32. **Live file-list auto-refresh** (subscribe to `/topic/files` the same
-    way chat already subscribes to `/topic/public`, re-render on message
-    instead of requiring a manual refresh) — backend ready.
+30. ~~**Delete/rename UI**~~ — **Fixed:** each file/folder row gets a Rename
+    and a Delete action button. Rename uses `prompt()` (same native-dialog
+    convention this app already uses for clear-history confirmations);
+    Delete uses `confirm()` and warns it moves to trash. Both call the
+    matching file- or folder-level endpoint based on the row's
+    `data-is-dir`, then reload.
+31. ~~**Create-folder UI**~~ — **Fixed:** a "New Folder" button next to
+    Upload, `prompt()`s for a name, creates it under whatever directory
+    you're currently browsing (read from the `path` query param), then
+    reloads.
+32. ~~**Live file-list auto-refresh**~~ — **Fixed:** `connectWebSocket()` is
+    now called unconditionally on page load (previously only when the chat
+    modal opened) and also subscribes to `/topic/files`. On a change, it
+    auto-reloads after a short toast - *unless* a modal is currently open
+    (`document.body` has Bootstrap's `modal-open` class), in which case it
+    only shows a toast. That guard matters: the upload and download modals
+    stay open for the whole transfer, so without it a multi-file upload in
+    one browser tab would get its own page reloaded out from under it by
+    its own first file's completion broadcast, aborting the rest of the
+    queue.
+
+Verified live against a running instance (not just unit-level): created a
+folder, renamed it, and deleted it through the actual rendered buttons
+(native dialogs mocked for automation only, everything else — fetch calls,
+DOM, server — real); confirmed the page auto-reloads on its own broadcast
+when no modal is open, and confirmed it does *not* reload while a modal
+(tested with the upload modal) is open.
 
 ## No action needed, flagged only for awareness
 

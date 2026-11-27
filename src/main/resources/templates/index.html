@@ -116,6 +116,10 @@
                         <span class="material-symbols-rounded">history</span> History
                     </a>
 
+                    <button class="btn btn-surface btn-sm d-none d-md-inline-flex" onclick="createFolderPrompt()">
+                        <span class="material-symbols-rounded">create_new_folder</span> New Folder
+                    </button>
+
                     <button class="btn btn-premium btn-sm d-none d-md-inline-flex" data-bs-toggle="modal" data-bs-target="#uploadModal">
                         <span class="material-symbols-rounded">cloud_upload</span> Upload
                     </button>
@@ -243,6 +247,16 @@
                             <a th:if="${file.directory}" th:href="@{/zip-folder(path=${file.relativePath})}" class="file-action-btn" title="Download Folder ZIP" aria-label="Download Folder ZIP">
                                 <span class="material-symbols-rounded" style="color: var(--md-sys-color-primary);">folder_zip</span>
                             </a>
+                            <button type="button" class="file-action-btn"
+                                    th:data-filecode="${file.code}" th:data-path="${file.relativePath}" th:data-name="${file.name}"
+                                    onclick="renameItem(this)" title="Rename" aria-label="Rename">
+                                <span class="material-symbols-rounded">drive_file_rename_outline</span>
+                            </button>
+                            <button type="button" class="file-action-btn"
+                                    th:data-filecode="${file.code}" th:data-path="${file.relativePath}" th:data-name="${file.name}"
+                                    onclick="deleteItem(this)" title="Delete" aria-label="Delete">
+                                <span class="material-symbols-rounded" style="color: var(--md-sys-color-error);">delete</span>
+                            </button>
                         </div>
                     </div>
                 </div>
