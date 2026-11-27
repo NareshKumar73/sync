@@ -3,7 +3,7 @@ WORKDIR /app
 
 RUN mkdir -p /app/data/tmp
 
-COPY target/sync-0.0.9.jar app.jar
+COPY target/sync-0.1.0.jar app.jar
 
 EXPOSE 9005
 
